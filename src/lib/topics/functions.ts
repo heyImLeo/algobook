@@ -193,6 +193,7 @@ export interface SubtopicQuestionGroup {
 
 export interface SubtopicContinueItem {
   questionId: string;
+  questionSlug: string;
   title: string;
   groupName: string | null;
   status: QuestionStatus;
@@ -339,6 +340,7 @@ export const $getSubtopicDetail = createServerFn({ method: "GET" })
     const continueItem: SubtopicContinueItem | null = continueCandidate
       ? {
           questionId: continueCandidate.question.id,
+          questionSlug: continueCandidate.question.slug,
           title: continueCandidate.question.title,
           groupName: continueCandidate.groupName,
           status: "attempted",

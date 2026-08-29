@@ -212,14 +212,17 @@ function ContinueCard({ item }: { readonly item: DashboardActivityItem | null })
       <div className="mb-4 text-xs text-muted-foreground">
         {item.subtopicSolved} of {item.subtopicTotal} questions solved
       </div>
-      <button
-        type="button"
-        disabled
-        title="Coming soon"
-        className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+      <Link
+        to="/app/topics/$topicSlug/$subtopicSlug/$questionSlug"
+        params={{
+          topicSlug: item.topicSlug,
+          subtopicSlug: item.subtopicSlug,
+          questionSlug: item.questionSlug,
+        }}
+        className="block w-full rounded-lg bg-primary py-2 text-center text-sm font-semibold text-primary-foreground hover:bg-primary/80"
       >
         Resume
-      </button>
+      </Link>
     </div>
   );
 }
@@ -235,9 +238,15 @@ function RecentActivityCard({ items }: { readonly items: DashboardActivityItem[]
       ) : (
         <div className="flex flex-col">
           {items.map((item) => (
-            <div
+            <Link
               key={item.questionId}
-              className="flex items-start gap-3 border-b border-border py-2.5 last:border-b-0"
+              to="/app/topics/$topicSlug/$subtopicSlug/$questionSlug"
+              params={{
+                topicSlug: item.topicSlug,
+                subtopicSlug: item.subtopicSlug,
+                questionSlug: item.questionSlug,
+              }}
+              className="flex items-start gap-3 border-b border-border py-2.5 transition-colors last:border-b-0 hover:bg-accent/40"
             >
               <QuestionStatusIcon status={item.status} className="mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
@@ -249,7 +258,7 @@ function RecentActivityCard({ items }: { readonly items: DashboardActivityItem[]
               <span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground">
                 {formatRelativeTime(new Date(item.practicedAt))}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
       )}

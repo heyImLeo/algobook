@@ -17,8 +17,11 @@ export interface DashboardTopicProgress {
 
 export interface DashboardActivityItem {
   questionId: string;
+  questionSlug: string;
   title: string;
+  topicSlug: string;
   topicName: string;
+  subtopicSlug: string;
   subtopicName: string;
   subtopicSolved: number;
   subtopicTotal: number;
@@ -41,8 +44,11 @@ export interface DashboardStats {
 
 interface ActivityWorkingItem {
   questionId: string;
+  questionSlug: string;
   title: string;
+  topicSlug: string;
   topicName: string;
+  subtopicSlug: string;
   subtopicName: string;
   subtopicSolved: number;
   subtopicTotal: number;
@@ -113,8 +119,11 @@ export const $getDashboardStats = createServerFn({ method: "GET" })
 
           subtopicActivity.push({
             questionId: question.id,
+            questionSlug: question.slug,
             title: question.title,
+            topicSlug: topic.slug,
             topicName: topic.name,
+            subtopicSlug: subtopic.slug,
             subtopicName: subtopic.name,
             status: progress.status,
             practicedAt: progress.lastPracticedAt ?? progress.updatedAt,
