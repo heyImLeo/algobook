@@ -1,5 +1,5 @@
 import { noop, useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2Icon, CircleDashedIcon, FlameIcon, LoaderCircleIcon } from "lucide-react";
 
 import { useAuthSuspense } from "#/lib/auth/hooks.ts";
@@ -138,7 +138,11 @@ function TopicProgressRow({ topic }: { readonly topic: DashboardTopicProgress })
   const percent = topic.total > 0 ? Math.round((topic.solved / topic.total) * 100) : 0;
 
   return (
-    <div className="flex items-center gap-3.5 border-b border-border py-3 last:border-b-0">
+    <Link
+      to="/app/topics/$topicSlug"
+      params={{ topicSlug: topic.slug }}
+      className="flex items-center gap-3.5 border-b border-border py-3 transition-colors last:border-b-0 hover:bg-accent/40"
+    >
       <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
         {/* oxlint-disable-next-line react/static-components */}
         <Icon className="size-4" aria-hidden="true" />
@@ -152,7 +156,7 @@ function TopicProgressRow({ topic }: { readonly topic: DashboardTopicProgress })
       <span className="font-mono text-xs whitespace-nowrap text-muted-foreground">
         {topic.solved}/{topic.total}
       </span>
-    </div>
+    </Link>
   );
 }
 
