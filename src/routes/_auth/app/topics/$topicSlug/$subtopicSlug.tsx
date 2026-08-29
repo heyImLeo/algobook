@@ -4,8 +4,15 @@ import { ChevronRightIcon, ExternalLinkIcon } from "lucide-react";
 import { useState } from "react";
 import Markdown from "react-markdown";
 
+import { QuestionStatusIcon } from "#/components/question-status-icon.tsx";
 import type { Difficulty, QuestionStatus } from "#/lib/db/schema/types.ts";
-import type { SubtopicQuestion, SubtopicQuestionGroup } from "#/lib/topics/functions.ts";
+import { getTopicIcon } from "#/lib/topic-icons.ts";
+import type {
+  RelatedSubtopic,
+  SubtopicContinueItem,
+  SubtopicQuestion,
+  SubtopicQuestionGroup,
+} from "#/lib/topics/functions.ts";
 import { subtopicDetailQueryOptions } from "#/lib/topics/queries.ts";
 import { cn } from "#/lib/utils.ts";
 
@@ -93,6 +100,12 @@ function SubtopicPage() {
         </div>
       )}
 
+      <RelatedSubtopics
+        topicSlug={topicSlug}
+        subtopics={subtopic.relatedSubtopics}
+        icon={subtopic.topic.icon}
+      />
+
       <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="text-base font-semibold">Practice questions</h2>
         <div className="flex gap-1 rounded-full border border-border p-1">
@@ -104,7 +117,7 @@ function SubtopicPage() {
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                 statusFilter === filter.value
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -113,6 +126,8 @@ function SubtopicPage() {
           ))}
         </div>
       </div>
+
+      <ContinueCard item={subtopic.continueItem} />
 
       <div className="flex flex-col gap-6">
         {filteredGroups.map((group) => (
@@ -125,6 +140,87 @@ function SubtopicPage() {
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function RelatedSubtopics({
+  topicSlug,
+  subtopics,
+  icon,
+}: {
+  readonly topicSlug: string;
+  readonly subtopics: RelatedSubtopic[];
+  readonly icon: string;
+}) {
+  if (subtopics.length === 0) return null;
+  const Icon = getTopicIcon(icon);
+
+  return (
+    <>
+      <h2 className="mb-4 text-base font-semibold">Related Subtopics</h2>
+      <div className="mb-8 grid gap-3.5 sm:grid-cols-2">
+        {subtopics.map((subtopic) => (
+          <Link
+            key={subtopic.slug}
+            to="/app/topics/$topicSlug/$subtopicSlug"
+            params={{ topicSlug, subtopicSlug: subtopic.slug }}
+            className="flex items-center gap-3.5 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              {/* oxlint-disable-next-line react/static-components */}
+              <Icon className="size-4" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">{subtopic.name}</div>
+              <div className="truncate text-xs text-muted-foreground">{subtopic.description}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function ContinueCard({ item }: { readonly item: SubtopicContinueItem | null }) {
+  if (!item) return null;
+
+  return (
+    <div className="mb-6 flex items-center gap-4 rounded-2xl border border-gold/30 bg-linear-to-br from-gold/15 to-card p-4">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gold/15 text-gold">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+          <path
+            d="M12 7v5l3 3"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs font-semibold tracking-wide text-gold uppercase">
+          Continue where you left off
+        </div>
+        <div className="mt-0.5 truncate text-sm font-semibold">
+          {item.title}
+          {item.groupName && (
+            <span className="font-normal text-muted-foreground">
+              {" "}
+              · {item.groupName} · Attempted
+            </span>
+          )}
+        </div>
+      </div>
+      <button
+        type="button"
+        disabled
+        title="Coming soon"
+        className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-semibold text-gold-foreground disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Resume
+      </button>
     </div>
   );
 }
@@ -160,16 +256,24 @@ function QuestionListCard({ questions }: { readonly questions: SubtopicQuestion[
 function QuestionRow({ question }: { readonly question: SubtopicQuestion }) {
   return (
     <div className="flex items-center gap-3 border-b border-border py-3 last:border-b-0">
-      <StatusBadge status={question.status} />
-      <div className="min-w-0 flex-1">
-        <span className="text-sm font-medium">{question.title}</span>
+      <QuestionStatusIcon status={question.status} className="shrink-0" />
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="truncate text-sm font-medium">{question.title}</span>
         {question.leetcodeNumber !== null && (
-          <span className="ml-2 font-mono text-xs text-muted-foreground">
+          <span className="shrink-0 font-mono text-xs text-muted-foreground">
             #{question.leetcodeNumber}
           </span>
         )}
       </div>
+      {question.dueForReview && (
+        <span className="shrink-0 rounded-full bg-gold/15 px-2 py-0.5 text-[10.5px] font-bold whitespace-nowrap text-gold">
+          due for review
+        </span>
+      )}
       <DifficultyBadge difficulty={question.difficulty} />
+      <span className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">
+        {STATUS_LABELS[question.status]}
+      </span>
       {question.url && (
         <a
           href={question.url}
@@ -185,30 +289,11 @@ function QuestionRow({ question }: { readonly question: SubtopicQuestion }) {
   );
 }
 
-const STATUS_STYLES: Record<QuestionStatus, string> = {
-  todo: "bg-muted text-muted-foreground",
-  attempted: "bg-warning/15 text-warning",
-  solved: "bg-success/15 text-success",
-};
-
 const STATUS_LABELS: Record<QuestionStatus, string> = {
   todo: "Todo",
   attempted: "Attempted",
   solved: "Solved",
 };
-
-function StatusBadge({ status }: { readonly status: QuestionStatus }) {
-  return (
-    <span
-      className={cn(
-        "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap",
-        STATUS_STYLES[status],
-      )}
-    >
-      {STATUS_LABELS[status]}
-    </span>
-  );
-}
 
 const DIFFICULTY_STYLES: Record<Difficulty, string> = {
   easy: "text-success",
@@ -218,10 +303,31 @@ const DIFFICULTY_STYLES: Record<Difficulty, string> = {
 
 function DifficultyBadge({ difficulty }: { readonly difficulty: Difficulty }) {
   return (
-    <span className={cn("shrink-0 text-xs font-medium capitalize", DIFFICULTY_STYLES[difficulty])}>
+    <span
+      className={cn("w-14 shrink-0 text-xs font-medium capitalize", DIFFICULTY_STYLES[difficulty])}
+    >
       {difficulty}
     </span>
   );
+}
+
+const CALLOUT_MATCHERS: { prefix: string; className: string; iconClassName: string }[] = [
+  {
+    prefix: "Key Insight",
+    className: "border-primary/25 bg-primary/10",
+    iconClassName: "bg-primary/15 text-primary",
+  },
+  {
+    prefix: "Common Mistakes",
+    className: "border-warning/25 bg-warning/10",
+    iconClassName: "bg-warning/15 text-warning",
+  },
+];
+
+function headingText(children: React.ReactNode): string {
+  if (typeof children === "string") return children;
+  if (Array.isArray(children)) return children.map(headingText).join("");
+  return "";
 }
 
 function MarkdownContent({ content }: { readonly content: string }) {
@@ -234,11 +340,38 @@ function MarkdownContent({ content }: { readonly content: string }) {
               {children}
             </h2>
           ),
-          h2: ({ children, ...props }) => (
-            <h2 className="mt-2 text-lg font-bold" {...props}>
-              {children}
-            </h2>
-          ),
+          h2: ({ children, ...props }) => {
+            const callout = CALLOUT_MATCHERS.find((matcher) =>
+              headingText(children).startsWith(matcher.prefix),
+            );
+            if (callout) {
+              return (
+                <div
+                  className={cn(
+                    "-mb-2 flex items-center gap-2.5 rounded-t-lg border p-3",
+                    callout.className,
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold",
+                      callout.iconClassName,
+                    )}
+                  >
+                    !
+                  </span>
+                  <h2 className="text-sm font-bold" {...props}>
+                    {children}
+                  </h2>
+                </div>
+              );
+            }
+            return (
+              <h2 className="mt-2 text-lg font-bold" {...props}>
+                {children}
+              </h2>
+            );
+          },
           h3: ({ children, ...props }) => (
             <h3 className="mt-2 text-base font-semibold" {...props}>
               {children}

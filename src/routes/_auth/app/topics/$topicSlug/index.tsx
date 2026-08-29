@@ -2,8 +2,9 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ChevronRightIcon, LayersIcon } from "lucide-react";
 
+import { formatRelativeTime } from "#/lib/format-relative-time.ts";
 import { getTopicIcon } from "#/lib/topic-icons.ts";
-import type { TopicSubtopicSummary } from "#/lib/topics/functions.ts";
+import type { TopicDetail, TopicSubtopicSummary } from "#/lib/topics/functions.ts";
 import { topicDetailQueryOptions } from "#/lib/topics/queries.ts";
 
 export const Route = createFileRoute("/_auth/app/topics/$topicSlug/")({
@@ -70,10 +71,7 @@ function TopicPage() {
         </div>
       </div>
 
-      <MixedRecallCard
-        totalQuestions={topic.mixedRecall.totalQuestions}
-        dueForReviewCount={topic.mixedRecall.dueForReviewCount}
-      />
+      <MixedRecallCard topicName={topic.name} mixedRecall={topic.mixedRecall} />
 
       <h2 className="mt-8 mb-4 text-base font-semibold">Subtopics</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -81,41 +79,111 @@ function TopicPage() {
           <SubtopicCard key={subtopic.id} topicSlug={topic.slug} subtopic={subtopic} />
         ))}
       </div>
+
+      <ComplexityCheatSheet subtopics={topic.subtopics} />
     </div>
   );
 }
 
 function MixedRecallCard({
-  totalQuestions,
-  dueForReviewCount,
+  topicName,
+  mixedRecall,
 }: {
-  readonly totalQuestions: number;
-  readonly dueForReviewCount: number;
+  readonly topicName: string;
+  readonly mixedRecall: TopicDetail["mixedRecall"];
 }) {
+  const { inRotation, confirmedSolid, dueForReview, lastPracticedAt } = mixedRecall;
+
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-linear-to-br from-accent/40 to-card p-6 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-start gap-3.5">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
-          <LayersIcon className="size-5" aria-hidden="true" />
+    <div className="rounded-2xl border border-gold/30 bg-linear-to-br from-gold/15 to-card p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-gold">
+          <LayersIcon className="size-6" aria-hidden="true" />
         </div>
-        <div>
-          <div className="text-sm font-semibold">Mixed recall</div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {totalQuestions} unique questions across this topic
-            {dueForReviewCount > 0 && (
-              <>
-                {" "}
-                ·{" "}
-                <span className="font-medium text-warning">{dueForReviewCount} due for review</span>
-              </>
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h2 className="text-base font-bold">Mixed Recall — {topicName}</h2>
+            {inRotation > 0 && (
+              <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-bold text-gold">
+                {inRotation} in rotation
+              </span>
             )}
-          </p>
+          </div>
+          {inRotation > 0 ? (
+            <>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Prioritizes questions you've solved but haven't reconfirmed cold in the last 2
+                weeks, plus anything left half-finished — pulled from every subtopic above with no
+                repeats.
+              </p>
+              <div className="mt-3 h-1.5 max-w-80 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-gold"
+                  style={{ width: `${Math.round((confirmedSolid / inRotation) * 100)}%` }}
+                />
+              </div>
+              <span className="mt-1.5 block font-mono text-xs text-muted-foreground">
+                {confirmedSolid} confirmed solid · {dueForReview} due for review
+                {lastPracticedAt &&
+                  ` · last practiced ${formatRelativeTime(new Date(lastPracticedAt))}`}
+              </span>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Nothing in rotation yet — solve or attempt a question below to start building your
+              recall queue.
+            </p>
+          )}
         </div>
+        <button
+          type="button"
+          disabled
+          title="Coming soon"
+          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-gold-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Start Mixed Recall
+        </button>
       </div>
-      <span className="inline-flex shrink-0 items-center rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground">
-        Coming soon
-      </span>
     </div>
+  );
+}
+
+function ComplexityCheatSheet({ subtopics }: { readonly subtopics: TopicSubtopicSummary[] }) {
+  const hasComplexityData = subtopics.some(
+    (subtopic) => subtopic.timeComplexity || subtopic.spaceComplexity || subtopic.bestFor,
+  );
+  if (!hasComplexityData) return null;
+
+  return (
+    <>
+      <h2 className="mt-8 mb-4 text-base font-semibold">Complexity Cheat Sheet</h2>
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+        <table className="w-full min-w-150 text-sm">
+          <thead>
+            <tr className="border-b border-border text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              <th className="px-4 py-3 text-left">Algorithm</th>
+              <th className="px-4 py-3 text-left">Time</th>
+              <th className="px-4 py-3 text-left">Space</th>
+              <th className="px-4 py-3 text-left">Best for</th>
+            </tr>
+          </thead>
+          <tbody>
+            {subtopics.map((subtopic) => (
+              <tr key={subtopic.id} className="border-b border-border last:border-b-0">
+                <td className="px-4 py-3 font-medium whitespace-nowrap">{subtopic.name}</td>
+                <td className="px-4 py-3 font-mono text-xs whitespace-nowrap text-muted-foreground">
+                  {subtopic.timeComplexity ?? "—"}
+                </td>
+                <td className="px-4 py-3 font-mono text-xs whitespace-nowrap text-muted-foreground">
+                  {subtopic.spaceComplexity ?? "—"}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">{subtopic.bestFor ?? "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
