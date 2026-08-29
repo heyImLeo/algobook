@@ -1,17 +1,35 @@
 import { Input as InputPrimitive } from "@base-ui/react/input";
+import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
 import { cn } from "#/lib/utils.ts";
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+const inputVariants = cva(
+  "w-full min-w-0 rounded-lg border border-transparent bg-input/50 text-base transition-[color,box-shadow] duration-200 outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+  {
+    variants: {
+      size: {
+        default: "h-8 px-2.5 py-1",
+        lg: "h-10 px-3.5 py-2",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  },
+);
+
+function Input({
+  className,
+  type,
+  size = "default",
+  ...props
+}: Omit<React.ComponentProps<"input">, "size"> & VariantProps<typeof inputVariants>) {
   return (
     <InputPrimitive
       type={type}
       data-slot="input"
-      className={cn(
-        "h-8 w-full min-w-0 rounded-lg border border-transparent bg-input/50 px-2.5 py-1 text-base transition-[color,box-shadow] duration-200 outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
-        className,
-      )}
+      className={cn(inputVariants({ size, className }))}
       {...props}
     />
   );

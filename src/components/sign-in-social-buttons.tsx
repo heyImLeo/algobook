@@ -3,7 +3,6 @@ import { useMutation } from "@tanstack/react-query";
 
 import { Button } from "#/components/ui/button.tsx";
 import { toast } from "#/components/ui/toast.tsx";
-import { env } from "#/env/client.ts";
 import { authClient } from "#/lib/auth/auth-client.ts";
 
 interface SocialLoginButtonProps {
@@ -56,10 +55,6 @@ export function SocialSignInButtons({
   callbackURL,
   disabled,
 }: Pick<SocialLoginButtonProps, "callbackURL" | "disabled">) {
-  // TODO: Remove this. This is just for the demo deployment of TanStarter, which this project is based on.
-  const isPreviewDeployment =
-    new URL(env.VITE_BASE_URL).origin === "https://tanstarter.mugnavo.com";
-
   return (
     <>
       <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:border-t after:border-border">
@@ -75,7 +70,7 @@ export function SocialSignInButtons({
         <SignInSocialButton
           provider="google"
           callbackURL={callbackURL}
-          disabled={disabled || isPreviewDeployment}
+          disabled={disabled}
           icon={<SiGoogle className="size-4" />}
         />
       </div>
