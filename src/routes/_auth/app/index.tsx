@@ -1,7 +1,8 @@
 import { noop, useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2Icon, CircleDashedIcon, FlameIcon, LoaderCircleIcon } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { FlameIcon, LoaderCircleIcon } from "lucide-react";
 
+import { QuestionStatusIcon } from "#/components/question-status-icon.tsx";
 import { useAuthSuspense } from "#/lib/auth/hooks.ts";
 import type {
   DashboardActivityItem,
@@ -9,8 +10,9 @@ import type {
   DashboardTopicProgress,
 } from "#/lib/dashboard/functions.ts";
 import { dashboardStatsQueryOptions } from "#/lib/dashboard/queries.ts";
-import type { QuestionStatus } from "#/lib/db/schema/types.ts";
+import { formatRelativeTime } from "#/lib/format-relative-time.ts";
 import { getTopicIcon } from "#/lib/topic-icons.ts";
+import { cn } from "#/lib/utils.ts";
 
 export const Route = createFileRoute("/_auth/app/")({
   component: DashboardPage,
@@ -75,6 +77,7 @@ function DashboardContent({ stats }: { readonly stats: DashboardStats }) {
           value={String(stats.totalSolved)}
           sublabel={`/ ${stats.totalQuestions}`}
           percent={solvedPercent}
+          barClassName="bg-primary"
         />
         <StatCard label="Attempted" value={String(stats.totalAttempted)} sublabel="in progress" />
         <StatCard label="This week" value={String(stats.weekSolvedCount)} sublabel="solved" />
@@ -83,6 +86,7 @@ function DashboardContent({ stats }: { readonly stats: DashboardStats }) {
           value={String(stats.topicsActiveCount)}
           sublabel={`/ ${stats.topicsCount}`}
           percent={topicsPercent}
+          barClassName="bg-primary"
         />
       </div>
 
@@ -110,11 +114,13 @@ function StatCard({
   value,
   sublabel,
   percent,
+  barClassName = "bg-primary",
 }: {
   readonly label: string;
   readonly value: string;
   readonly sublabel: string;
   readonly percent?: number;
+  readonly barClassName?: string;
 }) {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
@@ -125,55 +131,95 @@ function StatCard({
       </div>
       {percent !== undefined && (
         <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
+          <div
+            className={cn("h-full rounded-full", barClassName)}
+            style={{ width: `${percent}%` }}
+          />
         </div>
       )}
     </div>
   );
+}
+
+/** Buckets a topic's completion into a visual "how healthy is this" tier. */
+function topicProgressTone(percent: number): { iconClassName: string; barClassName: string } {
+  if (percent === 0)
+    return { iconClassName: "bg-muted text-muted-foreground", barClassName: "bg-muted-foreground" };
+  if (percent >= 70)
+    return { iconClassName: "bg-success/15 text-success", barClassName: "bg-success" };
+  return { iconClassName: "bg-primary/15 text-primary", barClassName: "bg-primary" };
 }
 
 function TopicProgressRow({ topic }: { readonly topic: DashboardTopicProgress }) {
   // Resolving a stable icon component by name here, not defining a new one.
   const Icon = getTopicIcon(topic.icon);
   const percent = topic.total > 0 ? Math.round((topic.solved / topic.total) * 100) : 0;
+  const tone = topicProgressTone(percent);
 
   return (
-    <div className="flex items-center gap-3.5 border-b border-border py-3 last:border-b-0">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+    <Link
+      to="/app/topics/$topicSlug"
+      params={{ topicSlug: topic.slug }}
+      className="flex items-center gap-3.5 border-b border-border py-3 transition-colors last:border-b-0 hover:bg-accent/40"
+    >
+      <div
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-lg",
+          tone.iconClassName,
+        )}
+      >
         {/* oxlint-disable-next-line react/static-components */}
         <Icon className="size-4" aria-hidden="true" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm font-semibold">{topic.name}</div>
         <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
+          <div
+            className={cn("h-full rounded-full", tone.barClassName)}
+            style={{ width: `${percent}%` }}
+          />
         </div>
       </div>
       <span className="font-mono text-xs whitespace-nowrap text-muted-foreground">
         {topic.solved}/{topic.total}
       </span>
-    </div>
+    </Link>
   );
 }
 
 function ContinueCard({ item }: { readonly item: DashboardActivityItem | null }) {
+  if (!item) {
+    return (
+      <div className="rounded-2xl border border-border bg-linear-to-br from-accent/40 to-card p-5">
+        <div className="mb-2 text-xs font-semibold tracking-wide text-primary uppercase">
+          Continue where you left off
+        </div>
+        <p className="text-sm text-muted-foreground">
+          You haven&apos;t started practicing yet — pick a topic to get going.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-border bg-linear-to-br from-accent/40 to-card p-5">
       <div className="mb-2 text-xs font-semibold tracking-wide text-primary uppercase">
         Continue where you left off
       </div>
-      {item ? (
-        <>
-          <div className="mb-1 text-sm font-semibold">{item.title}</div>
-          <div className="text-xs text-muted-foreground">
-            {item.topicName} · {item.subtopicName}
-          </div>
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          You haven&apos;t started practicing yet — pick a topic to get going.
-        </p>
-      )}
+      <div className="mb-1 text-sm font-semibold">
+        {item.topicName} · {item.title}
+      </div>
+      <div className="mb-4 text-xs text-muted-foreground">
+        {item.subtopicSolved} of {item.subtopicTotal} questions solved
+      </div>
+      <button
+        type="button"
+        disabled
+        title="Coming soon"
+        className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Resume
+      </button>
     </div>
   );
 }
@@ -193,24 +239,20 @@ function RecentActivityCard({ items }: { readonly items: DashboardActivityItem[]
               key={item.questionId}
               className="flex items-start gap-3 border-b border-border py-2.5 last:border-b-0"
             >
-              <StatusIcon status={item.status} />
+              <QuestionStatusIcon status={item.status} className="mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{item.title}</div>
                 <div className="text-xs text-muted-foreground">
                   {item.topicName} · {item.subtopicName}
                 </div>
               </div>
+              <span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground">
+                {formatRelativeTime(new Date(item.practicedAt))}
+              </span>
             </div>
           ))}
         </div>
       )}
     </div>
   );
-}
-
-function StatusIcon({ status }: { readonly status: QuestionStatus }) {
-  if (status === "solved") {
-    return <CheckCircle2Icon className="mt-0.5 size-4 shrink-0 text-success" aria-hidden="true" />;
-  }
-  return <CircleDashedIcon className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />;
 }

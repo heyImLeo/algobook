@@ -17,6 +17,8 @@ import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as AuthAppIndexRouteImport } from './routes/_auth/app/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthAppTopicsTopicSlugIndexRouteImport } from './routes/_auth/app/topics/$topicSlug/index'
+import { Route as AuthAppTopicsTopicSlugSubtopicSlugRouteImport } from './routes/_auth/app/topics/$topicSlug/$subtopicSlug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -56,6 +58,18 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthAppTopicsTopicSlugIndexRoute =
+  AuthAppTopicsTopicSlugIndexRouteImport.update({
+    id: '/topics/$topicSlug/',
+    path: '/topics/$topicSlug/',
+    getParentRoute: () => AuthAppRouteRoute,
+  } as any)
+const AuthAppTopicsTopicSlugSubtopicSlugRoute =
+  AuthAppTopicsTopicSlugSubtopicSlugRouteImport.update({
+    id: '/topics/$topicSlug/$subtopicSlug',
+    path: '/topics/$topicSlug/$subtopicSlug',
+    getParentRoute: () => AuthAppRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -64,6 +78,8 @@ export interface FileRoutesByFullPath {
   '/signup': typeof GuestSignupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/': typeof AuthAppIndexRoute
+  '/app/topics/$topicSlug/$subtopicSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugRoute
+  '/app/topics/$topicSlug/': typeof AuthAppTopicsTopicSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -71,6 +87,8 @@ export interface FileRoutesByTo {
   '/signup': typeof GuestSignupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app': typeof AuthAppIndexRoute
+  '/app/topics/$topicSlug/$subtopicSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugRoute
+  '/app/topics/$topicSlug': typeof AuthAppTopicsTopicSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -82,12 +100,29 @@ export interface FileRoutesById {
   '/_guest/signup': typeof GuestSignupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_auth/app/': typeof AuthAppIndexRoute
+  '/_auth/app/topics/$topicSlug/$subtopicSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugRoute
+  '/_auth/app/topics/$topicSlug/': typeof AuthAppTopicsTopicSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/login' | '/signup' | '/api/auth/$' | '/app/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/login'
+    | '/signup'
+    | '/api/auth/$'
+    | '/app/'
+    | '/app/topics/$topicSlug/$subtopicSlug'
+    | '/app/topics/$topicSlug/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/signup' | '/api/auth/$' | '/app'
+  to:
+    | '/'
+    | '/login'
+    | '/signup'
+    | '/api/auth/$'
+    | '/app'
+    | '/app/topics/$topicSlug/$subtopicSlug'
+    | '/app/topics/$topicSlug'
   id:
     | '__root__'
     | '/'
@@ -98,6 +133,8 @@ export interface FileRouteTypes {
     | '/_guest/signup'
     | '/api/auth/$'
     | '/_auth/app/'
+    | '/_auth/app/topics/$topicSlug/$subtopicSlug'
+    | '/_auth/app/topics/$topicSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -165,15 +202,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/app/topics/$topicSlug/': {
+      id: '/_auth/app/topics/$topicSlug/'
+      path: '/topics/$topicSlug'
+      fullPath: '/app/topics/$topicSlug/'
+      preLoaderRoute: typeof AuthAppTopicsTopicSlugIndexRouteImport
+      parentRoute: typeof AuthAppRouteRoute
+    }
+    '/_auth/app/topics/$topicSlug/$subtopicSlug': {
+      id: '/_auth/app/topics/$topicSlug/$subtopicSlug'
+      path: '/topics/$topicSlug/$subtopicSlug'
+      fullPath: '/app/topics/$topicSlug/$subtopicSlug'
+      preLoaderRoute: typeof AuthAppTopicsTopicSlugSubtopicSlugRouteImport
+      parentRoute: typeof AuthAppRouteRoute
+    }
   }
 }
 
 interface AuthAppRouteRouteChildren {
   AuthAppIndexRoute: typeof AuthAppIndexRoute
+  AuthAppTopicsTopicSlugSubtopicSlugRoute: typeof AuthAppTopicsTopicSlugSubtopicSlugRoute
+  AuthAppTopicsTopicSlugIndexRoute: typeof AuthAppTopicsTopicSlugIndexRoute
 }
 
 const AuthAppRouteRouteChildren: AuthAppRouteRouteChildren = {
   AuthAppIndexRoute: AuthAppIndexRoute,
+  AuthAppTopicsTopicSlugSubtopicSlugRoute:
+    AuthAppTopicsTopicSlugSubtopicSlugRoute,
+  AuthAppTopicsTopicSlugIndexRoute: AuthAppTopicsTopicSlugIndexRoute,
 }
 
 const AuthAppRouteRouteWithChildren = AuthAppRouteRoute._addFileChildren(

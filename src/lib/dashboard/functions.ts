@@ -20,6 +20,8 @@ export interface DashboardActivityItem {
   title: string;
   topicName: string;
   subtopicName: string;
+  subtopicSolved: number;
+  subtopicTotal: number;
   status: QuestionStatus;
   practicedAt: string;
 }
@@ -42,6 +44,8 @@ interface ActivityWorkingItem {
   title: string;
   topicName: string;
   subtopicName: string;
+  subtopicSolved: number;
+  subtopicTotal: number;
   status: QuestionStatus;
   practicedAt: Date;
 }
@@ -86,6 +90,11 @@ export const $getDashboardStats = createServerFn({ method: "GET" })
       let topicTotal = 0;
 
       for (const subtopic of topic.subtopics) {
+        let subtopicSolved = 0;
+        const subtopicTotal = subtopic.questions.length;
+        const subtopicActivity: Omit<ActivityWorkingItem, "subtopicSolved" | "subtopicTotal">[] =
+          [];
+
         for (const question of subtopic.questions) {
           topicTotal += 1;
           const progress = question.progress[0];
@@ -93,6 +102,7 @@ export const $getDashboardStats = createServerFn({ method: "GET" })
 
           if (progress.status === "solved") {
             topicSolved += 1;
+            subtopicSolved += 1;
             if (progress.solvedAt) {
               solvedDates.push(progress.solvedAt);
               if (progress.solvedAt >= weekStart) weekSolvedCount += 1;
@@ -101,7 +111,7 @@ export const $getDashboardStats = createServerFn({ method: "GET" })
             totalAttempted += 1;
           }
 
-          activity.push({
+          subtopicActivity.push({
             questionId: question.id,
             title: question.title,
             topicName: topic.name,
@@ -109,6 +119,10 @@ export const $getDashboardStats = createServerFn({ method: "GET" })
             status: progress.status,
             practicedAt: progress.lastPracticedAt ?? progress.updatedAt,
           });
+        }
+
+        for (const item of subtopicActivity) {
+          activity.push({ ...item, subtopicSolved, subtopicTotal });
         }
       }
 
