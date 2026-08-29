@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_auth/app")({
 function AppLayout() {
   return (
     <div className="min-h-svh">
-      <header className="flex items-center justify-between border-b border-border px-6 py-4">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur-sm">
         <Link to="/app" aria-label="Algobook dashboard">
           <Logo />
         </Link>
