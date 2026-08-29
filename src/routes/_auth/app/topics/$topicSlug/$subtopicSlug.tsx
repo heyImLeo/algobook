@@ -127,13 +127,28 @@ function SubtopicPage() {
         </div>
       </div>
 
-      <ContinueCard item={subtopic.continueItem} />
+      <ContinueCard
+        topicSlug={topicSlug}
+        subtopicSlug={subtopicSlug}
+        item={subtopic.continueItem}
+      />
 
       <div className="flex flex-col gap-6">
         {filteredGroups.map((group) => (
-          <QuestionGroupCard key={group.id} group={group} />
+          <QuestionGroupCard
+            key={group.id}
+            topicSlug={topicSlug}
+            subtopicSlug={subtopicSlug}
+            group={group}
+          />
         ))}
-        {filteredQuestions.length > 0 && <QuestionListCard questions={filteredQuestions} />}
+        {filteredQuestions.length > 0 && (
+          <QuestionListCard
+            topicSlug={topicSlug}
+            subtopicSlug={subtopicSlug}
+            questions={filteredQuestions}
+          />
+        )}
         {filteredGroups.length === 0 && filteredQuestions.length === 0 && (
           <p className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
             No questions match this filter.
@@ -182,7 +197,15 @@ function RelatedSubtopics({
   );
 }
 
-function ContinueCard({ item }: { readonly item: SubtopicContinueItem | null }) {
+function ContinueCard({
+  topicSlug,
+  subtopicSlug,
+  item,
+}: {
+  readonly topicSlug: string;
+  readonly subtopicSlug: string;
+  readonly item: SubtopicContinueItem | null;
+}) {
   if (!item) return null;
 
   return (
@@ -213,19 +236,26 @@ function ContinueCard({ item }: { readonly item: SubtopicContinueItem | null }) 
           )}
         </div>
       </div>
-      <button
-        type="button"
-        disabled
-        title="Coming soon"
-        className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-semibold text-gold-foreground disabled:cursor-not-allowed disabled:opacity-50"
+      <Link
+        to="/app/topics/$topicSlug/$subtopicSlug/$questionSlug"
+        params={{ topicSlug, subtopicSlug, questionSlug: item.questionSlug }}
+        className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-semibold text-gold-foreground"
       >
         Resume
-      </button>
+      </Link>
     </div>
   );
 }
 
-function QuestionGroupCard({ group }: { readonly group: SubtopicQuestionGroup }) {
+function QuestionGroupCard({
+  topicSlug,
+  subtopicSlug,
+  group,
+}: {
+  readonly topicSlug: string;
+  readonly subtopicSlug: string;
+  readonly group: SubtopicQuestionGroup;
+}) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <h3 className="text-sm font-semibold">{group.name}</h3>
@@ -234,31 +264,63 @@ function QuestionGroupCard({ group }: { readonly group: SubtopicQuestionGroup })
       )}
       <div className="mt-3 flex flex-col">
         {group.questions.map((question) => (
-          <QuestionRow key={question.id} question={question} />
+          <QuestionRow
+            key={question.id}
+            topicSlug={topicSlug}
+            subtopicSlug={subtopicSlug}
+            question={question}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function QuestionListCard({ questions }: { readonly questions: SubtopicQuestion[] }) {
+function QuestionListCard({
+  topicSlug,
+  subtopicSlug,
+  questions,
+}: {
+  readonly topicSlug: string;
+  readonly subtopicSlug: string;
+  readonly questions: SubtopicQuestion[];
+}) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex flex-col">
         {questions.map((question) => (
-          <QuestionRow key={question.id} question={question} />
+          <QuestionRow
+            key={question.id}
+            topicSlug={topicSlug}
+            subtopicSlug={subtopicSlug}
+            question={question}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function QuestionRow({ question }: { readonly question: SubtopicQuestion }) {
+function QuestionRow({
+  topicSlug,
+  subtopicSlug,
+  question,
+}: {
+  readonly topicSlug: string;
+  readonly subtopicSlug: string;
+  readonly question: SubtopicQuestion;
+}) {
   return (
     <div className="flex items-center gap-3 border-b border-border py-3 last:border-b-0">
       <QuestionStatusIcon status={question.status} className="shrink-0" />
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="truncate text-sm font-medium">{question.title}</span>
+        <Link
+          to="/app/topics/$topicSlug/$subtopicSlug/$questionSlug"
+          params={{ topicSlug, subtopicSlug, questionSlug: question.slug }}
+          className="truncate text-sm font-medium hover:text-primary"
+        >
+          {question.title}
+        </Link>
         {question.leetcodeNumber !== null && (
           <span className="shrink-0 font-mono text-xs text-muted-foreground">
             #{question.leetcodeNumber}
