@@ -188,7 +188,22 @@ interface SubtopicSeed {
   spaceComplexity?: string;
   bestFor?: string;
   referenceContent?: string;
+  // Marks the hidden per-topic subtopic holding Mixed Practice's question
+  // pool — questions here must not also appear in any other subtopic.
+  isMixedPool?: boolean;
   sortOrder: number;
+}
+
+/** Every topic gets exactly this one Mixed Practice pool subtopic. */
+function mixedPracticeSubtopicSeed(sortOrder: number): SubtopicSeed {
+  return {
+    slug: "mixed-practice",
+    name: "Mixed Practice",
+    description:
+      "A standalone pool of problems for this topic that don't appear in any subtopic above — no pattern label attached, closer to how a problem shows up in a real interview.",
+    isMixedPool: true,
+    sortOrder,
+  };
 }
 
 const graphsSubtopics: SubtopicSeed[] = [
@@ -6044,83 +6059,914 @@ interface TopicContentSeed {
   questionsBySubtopicSlug: Record<string, QuestionSeed[]>;
 }
 
+/**
+ * Mixed Practice question pools, one per topic. Every question below is
+ * verified (see `pnpm db:seed`'s duplicate check) to never also appear as a
+ * subtopic question — Mixed Practice must stay a disjoint set of problems,
+ * not a re-shuffling of ones already seen in a subtopic.
+ */
+const arraysMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "move-zeroes",
+    title: "Move Zeroes",
+    leetcodeNumber: 283,
+    url: "https://leetcode.com/problems/move-zeroes/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "non-decreasing-array",
+    title: "Non-decreasing Array",
+    leetcodeNumber: 665,
+    url: "https://leetcode.com/problems/non-decreasing-array/",
+    difficulty: "easy",
+    sortOrder: 2,
+  },
+  {
+    slug: "longest-consecutive-sequence",
+    title: "Longest Consecutive Sequence",
+    leetcodeNumber: 128,
+    url: "https://leetcode.com/problems/longest-consecutive-sequence/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "rotate-array",
+    title: "Rotate Array",
+    leetcodeNumber: 189,
+    url: "https://leetcode.com/problems/rotate-array/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "find-all-duplicates-in-an-array",
+    title: "Find All Duplicates in an Array",
+    leetcodeNumber: 442,
+    url: "https://leetcode.com/problems/find-all-duplicates-in-an-array/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "first-missing-positive",
+    title: "First Missing Positive",
+    leetcodeNumber: 41,
+    url: "https://leetcode.com/problems/first-missing-positive/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const linkedListsMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "remove-duplicates-from-sorted-list",
+    title: "Remove Duplicates from Sorted List",
+    leetcodeNumber: 83,
+    url: "https://leetcode.com/problems/remove-duplicates-from-sorted-list/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "remove-linked-list-elements",
+    title: "Remove Linked List Elements",
+    leetcodeNumber: 203,
+    url: "https://leetcode.com/problems/remove-linked-list-elements/",
+    difficulty: "easy",
+    sortOrder: 2,
+  },
+  {
+    slug: "add-two-numbers",
+    title: "Add Two Numbers",
+    leetcodeNumber: 2,
+    url: "https://leetcode.com/problems/add-two-numbers/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "swap-nodes-in-pairs",
+    title: "Swap Nodes in Pairs",
+    leetcodeNumber: 24,
+    url: "https://leetcode.com/problems/swap-nodes-in-pairs/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "rotate-list",
+    title: "Rotate List",
+    leetcodeNumber: 61,
+    url: "https://leetcode.com/problems/rotate-list/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "reorder-list",
+    title: "Reorder List",
+    leetcodeNumber: 143,
+    url: "https://leetcode.com/problems/reorder-list/",
+    difficulty: "medium",
+    sortOrder: 6,
+  },
+];
+
+const stringsMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "longest-common-prefix",
+    title: "Longest Common Prefix",
+    leetcodeNumber: 14,
+    url: "https://leetcode.com/problems/longest-common-prefix/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "add-strings",
+    title: "Add Strings",
+    leetcodeNumber: 415,
+    url: "https://leetcode.com/problems/add-strings/",
+    difficulty: "easy",
+    sortOrder: 2,
+  },
+  {
+    slug: "string-to-integer-atoi",
+    title: "String to Integer (atoi)",
+    leetcodeNumber: 8,
+    url: "https://leetcode.com/problems/string-to-integer-atoi/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "multiply-strings",
+    title: "Multiply Strings",
+    leetcodeNumber: 43,
+    url: "https://leetcode.com/problems/multiply-strings/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "compare-version-numbers",
+    title: "Compare Version Numbers",
+    leetcodeNumber: 165,
+    url: "https://leetcode.com/problems/compare-version-numbers/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "shortest-palindrome",
+    title: "Shortest Palindrome",
+    leetcodeNumber: 214,
+    url: "https://leetcode.com/problems/shortest-palindrome/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const stacksQueuesMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "implement-stack-using-queues",
+    title: "Implement Stack using Queues",
+    leetcodeNumber: 225,
+    url: "https://leetcode.com/problems/implement-stack-using-queues/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "baseball-game",
+    title: "Baseball Game",
+    leetcodeNumber: 682,
+    url: "https://leetcode.com/problems/baseball-game/",
+    difficulty: "easy",
+    sortOrder: 2,
+  },
+  {
+    slug: "simplify-path",
+    title: "Simplify Path",
+    leetcodeNumber: 71,
+    url: "https://leetcode.com/problems/simplify-path/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "remove-duplicate-letters",
+    title: "Remove Duplicate Letters",
+    leetcodeNumber: 316,
+    url: "https://leetcode.com/problems/remove-duplicate-letters/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "132-pattern",
+    title: "132 Pattern",
+    leetcodeNumber: 456,
+    url: "https://leetcode.com/problems/132-pattern/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "basic-calculator",
+    title: "Basic Calculator",
+    leetcodeNumber: 224,
+    url: "https://leetcode.com/problems/basic-calculator/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const heapsPqMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "relative-ranks",
+    title: "Relative Ranks",
+    leetcodeNumber: 506,
+    url: "https://leetcode.com/problems/relative-ranks/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "ugly-number-ii",
+    title: "Ugly Number II",
+    leetcodeNumber: 264,
+    url: "https://leetcode.com/problems/ugly-number-ii/",
+    difficulty: "medium",
+    sortOrder: 2,
+  },
+  {
+    slug: "top-k-frequent-words",
+    title: "Top K Frequent Words",
+    leetcodeNumber: 692,
+    url: "https://leetcode.com/problems/top-k-frequent-words/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "reorganize-string",
+    title: "Reorganize String",
+    leetcodeNumber: 767,
+    url: "https://leetcode.com/problems/reorganize-string/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "single-threaded-cpu",
+    title: "Single-Threaded CPU",
+    leetcodeNumber: 1834,
+    url: "https://leetcode.com/problems/single-threaded-cpu/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "rearrange-string-k-distance-apart",
+    title: "Rearrange String k Distance Apart",
+    leetcodeNumber: 358,
+    url: "https://leetcode.com/problems/rearrange-string-k-distance-apart/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const searchMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "first-bad-version",
+    title: "First Bad Version",
+    leetcodeNumber: 278,
+    url: "https://leetcode.com/problems/first-bad-version/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "guess-number-higher-or-lower",
+    title: "Guess Number Higher or Lower",
+    leetcodeNumber: 374,
+    url: "https://leetcode.com/problems/guess-number-higher-or-lower/",
+    difficulty: "easy",
+    sortOrder: 2,
+  },
+  {
+    slug: "find-peak-element",
+    title: "Find Peak Element",
+    leetcodeNumber: 162,
+    url: "https://leetcode.com/problems/find-peak-element/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "single-element-in-a-sorted-array",
+    title: "Single Element in a Sorted Array",
+    leetcodeNumber: 540,
+    url: "https://leetcode.com/problems/single-element-in-a-sorted-array/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "find-the-smallest-divisor-given-a-threshold",
+    title: "Find the Smallest Divisor Given a Threshold",
+    leetcodeNumber: 1283,
+    url: "https://leetcode.com/problems/find-the-smallest-divisor-given-a-threshold/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "median-of-two-sorted-arrays",
+    title: "Median of Two Sorted Arrays",
+    leetcodeNumber: 4,
+    url: "https://leetcode.com/problems/median-of-two-sorted-arrays/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const sortMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "height-checker",
+    title: "Height Checker",
+    leetcodeNumber: 1051,
+    url: "https://leetcode.com/problems/height-checker/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "relative-sort-array",
+    title: "Relative Sort Array",
+    leetcodeNumber: 1122,
+    url: "https://leetcode.com/problems/relative-sort-array/",
+    difficulty: "easy",
+    sortOrder: 2,
+  },
+  {
+    slug: "sort-array-by-increasing-frequency",
+    title: "Sort Array by Increasing Frequency",
+    leetcodeNumber: 1636,
+    url: "https://leetcode.com/problems/sort-array-by-increasing-frequency/",
+    difficulty: "easy",
+    sortOrder: 3,
+  },
+  {
+    slug: "largest-number",
+    title: "Largest Number",
+    leetcodeNumber: 179,
+    url: "https://leetcode.com/problems/largest-number/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "queue-reconstruction-by-height",
+    title: "Queue Reconstruction by Height",
+    leetcodeNumber: 406,
+    url: "https://leetcode.com/problems/queue-reconstruction-by-height/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "pancake-sorting",
+    title: "Pancake Sorting",
+    leetcodeNumber: 969,
+    url: "https://leetcode.com/problems/pancake-sorting/",
+    difficulty: "medium",
+    sortOrder: 6,
+  },
+];
+
+const greedyMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "can-place-flowers",
+    title: "Can Place Flowers",
+    leetcodeNumber: 605,
+    url: "https://leetcode.com/problems/can-place-flowers/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "lemonade-change",
+    title: "Lemonade Change",
+    leetcodeNumber: 860,
+    url: "https://leetcode.com/problems/lemonade-change/",
+    difficulty: "easy",
+    sortOrder: 2,
+  },
+  {
+    slug: "di-string-match",
+    title: "DI String Match",
+    leetcodeNumber: 942,
+    url: "https://leetcode.com/problems/di-string-match/",
+    difficulty: "easy",
+    sortOrder: 3,
+  },
+  {
+    slug: "wiggle-subsequence",
+    title: "Wiggle Subsequence",
+    leetcodeNumber: 376,
+    url: "https://leetcode.com/problems/wiggle-subsequence/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "remove-k-digits",
+    title: "Remove K Digits",
+    leetcodeNumber: 402,
+    url: "https://leetcode.com/problems/remove-k-digits/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "monotone-increasing-digits",
+    title: "Monotone Increasing Digits",
+    leetcodeNumber: 738,
+    url: "https://leetcode.com/problems/monotone-increasing-digits/",
+    difficulty: "medium",
+    sortOrder: 6,
+  },
+];
+
+const backtrackingMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "generate-parentheses",
+    title: "Generate Parentheses",
+    leetcodeNumber: 22,
+    url: "https://leetcode.com/problems/generate-parentheses/",
+    difficulty: "medium",
+    sortOrder: 1,
+  },
+  {
+    slug: "restore-ip-addresses",
+    title: "Restore IP Addresses",
+    leetcodeNumber: 93,
+    url: "https://leetcode.com/problems/restore-ip-addresses/",
+    difficulty: "medium",
+    sortOrder: 2,
+  },
+  {
+    slug: "palindrome-partitioning",
+    title: "Palindrome Partitioning",
+    leetcodeNumber: 131,
+    url: "https://leetcode.com/problems/palindrome-partitioning/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "combination-sum-iii",
+    title: "Combination Sum III",
+    leetcodeNumber: 216,
+    url: "https://leetcode.com/problems/combination-sum-iii/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "non-decreasing-subsequences",
+    title: "Non-decreasing Subsequences",
+    leetcodeNumber: 491,
+    url: "https://leetcode.com/problems/non-decreasing-subsequences/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "expression-add-operators",
+    title: "Expression Add Operators",
+    leetcodeNumber: 282,
+    url: "https://leetcode.com/problems/expression-add-operators/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const bitManipulationMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "reverse-bits",
+    title: "Reverse Bits",
+    leetcodeNumber: 190,
+    url: "https://leetcode.com/problems/reverse-bits/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "find-the-difference",
+    title: "Find the Difference",
+    leetcodeNumber: 389,
+    url: "https://leetcode.com/problems/find-the-difference/",
+    difficulty: "easy",
+    sortOrder: 2,
+  },
+  {
+    slug: "hamming-distance",
+    title: "Hamming Distance",
+    leetcodeNumber: 461,
+    url: "https://leetcode.com/problems/hamming-distance/",
+    difficulty: "easy",
+    sortOrder: 3,
+  },
+  {
+    slug: "single-number-ii",
+    title: "Single Number II",
+    leetcodeNumber: 137,
+    url: "https://leetcode.com/problems/single-number-ii/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "bitwise-and-of-numbers-range",
+    title: "Bitwise AND of Numbers Range",
+    leetcodeNumber: 201,
+    url: "https://leetcode.com/problems/bitwise-and-of-numbers-range/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "sum-of-two-integers",
+    title: "Sum of Two Integers",
+    leetcodeNumber: 371,
+    url: "https://leetcode.com/problems/sum-of-two-integers/",
+    difficulty: "medium",
+    sortOrder: 6,
+  },
+];
+
+const intervalsMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "summary-ranges",
+    title: "Summary Ranges",
+    leetcodeNumber: 228,
+    url: "https://leetcode.com/problems/summary-ranges/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "my-calendar-ii",
+    title: "My Calendar II",
+    leetcodeNumber: 731,
+    url: "https://leetcode.com/problems/my-calendar-ii/",
+    difficulty: "medium",
+    sortOrder: 2,
+  },
+  {
+    slug: "remove-covered-intervals",
+    title: "Remove Covered Intervals",
+    leetcodeNumber: 1288,
+    url: "https://leetcode.com/problems/remove-covered-intervals/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "divide-intervals-into-minimum-number-of-groups",
+    title: "Divide Intervals Into Minimum Number of Groups",
+    leetcodeNumber: 2406,
+    url: "https://leetcode.com/problems/divide-intervals-into-minimum-number-of-groups/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "my-calendar-iii",
+    title: "My Calendar III",
+    leetcodeNumber: 732,
+    url: "https://leetcode.com/problems/my-calendar-iii/",
+    difficulty: "hard",
+    sortOrder: 5,
+  },
+  {
+    slug: "minimum-number-of-taps-to-open-to-water-a-garden",
+    title: "Minimum Number of Taps to Open to Water a Garden",
+    leetcodeNumber: 1326,
+    url: "https://leetcode.com/problems/minimum-number-of-taps-to-open-to-water-a-garden/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const graphsMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "find-the-town-judge",
+    title: "Find the Town Judge",
+    leetcodeNumber: 997,
+    url: "https://leetcode.com/problems/find-the-town-judge/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "number-of-provinces",
+    title: "Number of Provinces",
+    leetcodeNumber: 547,
+    url: "https://leetcode.com/problems/number-of-provinces/",
+    difficulty: "medium",
+    sortOrder: 2,
+  },
+  {
+    slug: "keys-and-rooms",
+    title: "Keys and Rooms",
+    leetcodeNumber: 841,
+    url: "https://leetcode.com/problems/keys-and-rooms/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "find-eventual-safe-states",
+    title: "Find Eventual Safe States",
+    leetcodeNumber: 802,
+    url: "https://leetcode.com/problems/find-eventual-safe-states/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "shortest-path-with-alternating-colors",
+    title: "Shortest Path with Alternating Colors",
+    leetcodeNumber: 1129,
+    url: "https://leetcode.com/problems/shortest-path-with-alternating-colors/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "largest-color-value-in-a-directed-graph",
+    title: "Largest Color Value in a Directed Graph",
+    leetcodeNumber: 1857,
+    url: "https://leetcode.com/problems/largest-color-value-in-a-directed-graph/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const treesMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "same-tree",
+    title: "Same Tree",
+    leetcodeNumber: 100,
+    url: "https://leetcode.com/problems/same-tree/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "path-sum",
+    title: "Path Sum",
+    leetcodeNumber: 112,
+    url: "https://leetcode.com/problems/path-sum/",
+    difficulty: "easy",
+    sortOrder: 2,
+  },
+  {
+    slug: "sum-root-to-leaf-numbers",
+    title: "Sum Root to Leaf Numbers",
+    leetcodeNumber: 129,
+    url: "https://leetcode.com/problems/sum-root-to-leaf-numbers/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "house-robber-iii",
+    title: "House Robber III",
+    leetcodeNumber: 337,
+    url: "https://leetcode.com/problems/house-robber-iii/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "all-nodes-distance-k-in-binary-tree",
+    title: "All Nodes Distance K in Binary Tree",
+    leetcodeNumber: 863,
+    url: "https://leetcode.com/problems/all-nodes-distance-k-in-binary-tree/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "maximum-sum-bst-in-binary-tree",
+    title: "Maximum Sum BST in Binary Tree",
+    leetcodeNumber: 1373,
+    url: "https://leetcode.com/problems/maximum-sum-bst-in-binary-tree/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const dynamicProgrammingMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "n-th-tribonacci-number",
+    title: "N-th Tribonacci Number",
+    leetcodeNumber: 1137,
+    url: "https://leetcode.com/problems/n-th-tribonacci-number/",
+    difficulty: "easy",
+    sortOrder: 1,
+  },
+  {
+    slug: "triangle",
+    title: "Triangle",
+    leetcodeNumber: 120,
+    url: "https://leetcode.com/problems/triangle/",
+    difficulty: "medium",
+    sortOrder: 2,
+  },
+  {
+    slug: "word-break",
+    title: "Word Break",
+    leetcodeNumber: 139,
+    url: "https://leetcode.com/problems/word-break/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "integer-break",
+    title: "Integer Break",
+    leetcodeNumber: 343,
+    url: "https://leetcode.com/problems/integer-break/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "longest-palindromic-subsequence",
+    title: "Longest Palindromic Subsequence",
+    leetcodeNumber: 516,
+    url: "https://leetcode.com/problems/longest-palindromic-subsequence/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "word-break-ii",
+    title: "Word Break II",
+    leetcodeNumber: 140,
+    url: "https://leetcode.com/problems/word-break-ii/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
+const triesMixedPracticeQuestions: QuestionSeed[] = [
+  {
+    slug: "implement-magic-dictionary",
+    title: "Implement Magic Dictionary",
+    leetcodeNumber: 676,
+    url: "https://leetcode.com/problems/implement-magic-dictionary/",
+    difficulty: "medium",
+    sortOrder: 1,
+  },
+  {
+    slug: "map-sum-pairs",
+    title: "Map Sum Pairs",
+    leetcodeNumber: 677,
+    url: "https://leetcode.com/problems/map-sum-pairs/",
+    difficulty: "medium",
+    sortOrder: 2,
+  },
+  {
+    slug: "longest-word-in-dictionary",
+    title: "Longest Word in Dictionary",
+    leetcodeNumber: 720,
+    url: "https://leetcode.com/problems/longest-word-in-dictionary/",
+    difficulty: "medium",
+    sortOrder: 3,
+  },
+  {
+    slug: "camelcase-matching",
+    title: "Camelcase Matching",
+    leetcodeNumber: 1023,
+    url: "https://leetcode.com/problems/camelcase-matching/",
+    difficulty: "medium",
+    sortOrder: 4,
+  },
+  {
+    slug: "search-suggestions-system",
+    title: "Search Suggestions System",
+    leetcodeNumber: 1268,
+    url: "https://leetcode.com/problems/search-suggestions-system/",
+    difficulty: "medium",
+    sortOrder: 5,
+  },
+  {
+    slug: "prefix-and-suffix-search",
+    title: "Prefix and Suffix Search",
+    leetcodeNumber: 745,
+    url: "https://leetcode.com/problems/prefix-and-suffix-search/",
+    difficulty: "hard",
+    sortOrder: 6,
+  },
+];
+
 const topicContent: TopicContentSeed[] = [
   {
     topicSlug: "graphs",
-    subtopics: graphsSubtopics,
+    subtopics: [...graphsSubtopics, mixedPracticeSubtopicSeed(graphsSubtopics.length + 1)],
     groupsBySubtopicSlug: { bfs: bfsGroups },
-    questionsBySubtopicSlug: graphsQuestionsBySubtopicSlug,
+    questionsBySubtopicSlug: {
+      ...graphsQuestionsBySubtopicSlug,
+      "mixed-practice": graphsMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "arrays",
-    subtopics: arraysSubtopics,
+    subtopics: [...arraysSubtopics, mixedPracticeSubtopicSeed(arraysSubtopics.length + 1)],
     groupsBySubtopicSlug: arraysGroupsBySubtopicSlug,
-    questionsBySubtopicSlug: arraysQuestionsBySubtopicSlug,
+    questionsBySubtopicSlug: {
+      ...arraysQuestionsBySubtopicSlug,
+      "mixed-practice": arraysMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "linked-lists",
-    subtopics: linkedListsSubtopics,
-    questionsBySubtopicSlug: linkedListsQuestionsBySubtopicSlug,
+    subtopics: [
+      ...linkedListsSubtopics,
+      mixedPracticeSubtopicSeed(linkedListsSubtopics.length + 1),
+    ],
+    questionsBySubtopicSlug: {
+      ...linkedListsQuestionsBySubtopicSlug,
+      "mixed-practice": linkedListsMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "strings",
-    subtopics: stringsSubtopics,
-    questionsBySubtopicSlug: stringsQuestionsBySubtopicSlug,
+    subtopics: [...stringsSubtopics, mixedPracticeSubtopicSeed(stringsSubtopics.length + 1)],
+    questionsBySubtopicSlug: {
+      ...stringsQuestionsBySubtopicSlug,
+      "mixed-practice": stringsMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "stacks-queues",
-    subtopics: stacksQueuesSubtopics,
-    questionsBySubtopicSlug: stacksQueuesQuestionsBySubtopicSlug,
+    subtopics: [
+      ...stacksQueuesSubtopics,
+      mixedPracticeSubtopicSeed(stacksQueuesSubtopics.length + 1),
+    ],
+    questionsBySubtopicSlug: {
+      ...stacksQueuesQuestionsBySubtopicSlug,
+      "mixed-practice": stacksQueuesMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "heaps-pq",
-    subtopics: heapsPqSubtopics,
-    questionsBySubtopicSlug: heapsPqQuestionsBySubtopicSlug,
+    subtopics: [...heapsPqSubtopics, mixedPracticeSubtopicSeed(heapsPqSubtopics.length + 1)],
+    questionsBySubtopicSlug: {
+      ...heapsPqQuestionsBySubtopicSlug,
+      "mixed-practice": heapsPqMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "search",
-    subtopics: searchSubtopics,
-    questionsBySubtopicSlug: searchQuestionsBySubtopicSlug,
+    subtopics: [...searchSubtopics, mixedPracticeSubtopicSeed(searchSubtopics.length + 1)],
+    questionsBySubtopicSlug: {
+      ...searchQuestionsBySubtopicSlug,
+      "mixed-practice": searchMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "sort",
-    subtopics: sortSubtopics,
-    questionsBySubtopicSlug: sortQuestionsBySubtopicSlug,
+    subtopics: [...sortSubtopics, mixedPracticeSubtopicSeed(sortSubtopics.length + 1)],
+    questionsBySubtopicSlug: {
+      ...sortQuestionsBySubtopicSlug,
+      "mixed-practice": sortMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "greedy",
-    subtopics: greedySubtopics,
-    questionsBySubtopicSlug: greedyQuestionsBySubtopicSlug,
+    subtopics: [...greedySubtopics, mixedPracticeSubtopicSeed(greedySubtopics.length + 1)],
+    questionsBySubtopicSlug: {
+      ...greedyQuestionsBySubtopicSlug,
+      "mixed-practice": greedyMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "backtracking",
-    subtopics: backtrackingSubtopics,
-    questionsBySubtopicSlug: backtrackingQuestionsBySubtopicSlug,
+    subtopics: [
+      ...backtrackingSubtopics,
+      mixedPracticeSubtopicSeed(backtrackingSubtopics.length + 1),
+    ],
+    questionsBySubtopicSlug: {
+      ...backtrackingQuestionsBySubtopicSlug,
+      "mixed-practice": backtrackingMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "bit-manipulation",
-    subtopics: bitManipulationSubtopics,
-    questionsBySubtopicSlug: bitManipulationQuestionsBySubtopicSlug,
+    subtopics: [
+      ...bitManipulationSubtopics,
+      mixedPracticeSubtopicSeed(bitManipulationSubtopics.length + 1),
+    ],
+    questionsBySubtopicSlug: {
+      ...bitManipulationQuestionsBySubtopicSlug,
+      "mixed-practice": bitManipulationMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "intervals",
-    subtopics: intervalsSubtopics,
-    questionsBySubtopicSlug: intervalsQuestionsBySubtopicSlug,
+    subtopics: [...intervalsSubtopics, mixedPracticeSubtopicSeed(intervalsSubtopics.length + 1)],
+    questionsBySubtopicSlug: {
+      ...intervalsQuestionsBySubtopicSlug,
+      "mixed-practice": intervalsMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "trees",
-    subtopics: treesSubtopics,
-    questionsBySubtopicSlug: treesQuestionsBySubtopicSlug,
+    subtopics: [...treesSubtopics, mixedPracticeSubtopicSeed(treesSubtopics.length + 1)],
+    questionsBySubtopicSlug: {
+      ...treesQuestionsBySubtopicSlug,
+      "mixed-practice": treesMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "dynamic-programming",
-    subtopics: dynamicProgrammingSubtopics,
-    questionsBySubtopicSlug: dynamicProgrammingQuestionsBySubtopicSlug,
+    subtopics: [
+      ...dynamicProgrammingSubtopics,
+      mixedPracticeSubtopicSeed(dynamicProgrammingSubtopics.length + 1),
+    ],
+    questionsBySubtopicSlug: {
+      ...dynamicProgrammingQuestionsBySubtopicSlug,
+      "mixed-practice": dynamicProgrammingMixedPracticeQuestions,
+    },
   },
   {
     topicSlug: "tries",
-    subtopics: triesSubtopics,
-    questionsBySubtopicSlug: triesQuestionsBySubtopicSlug,
+    subtopics: [...triesSubtopics, mixedPracticeSubtopicSeed(triesSubtopics.length + 1)],
+    questionsBySubtopicSlug: {
+      ...triesQuestionsBySubtopicSlug,
+      "mixed-practice": triesMixedPracticeQuestions,
+    },
   },
 ];
 

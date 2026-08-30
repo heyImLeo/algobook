@@ -31,11 +31,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "A DSA practice tracker — topics, subtopics, and spaced recall for interview prep.",
+          "A DSA practice tracker — topics, subtopics, and mixed practice for interview prep.",
       },
     ],
     links: [
-      // TODO: add a real favicon.ico to public/ and link it here
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "stylesheet", href: appCss },
     ],
   }),

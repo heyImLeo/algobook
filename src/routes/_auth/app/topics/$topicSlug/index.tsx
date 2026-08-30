@@ -1,10 +1,9 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ChevronRightIcon, LayersIcon } from "lucide-react";
+import { ChevronRightIcon, ShuffleIcon } from "lucide-react";
 
-import { formatRelativeTime } from "#/lib/format-relative-time.ts";
 import { getTopicIcon } from "#/lib/topic-icons.ts";
-import type { TopicDetail, TopicSubtopicSummary } from "#/lib/topics/functions.ts";
+import type { TopicSubtopicSummary } from "#/lib/topics/functions.ts";
 import { topicDetailQueryOptions } from "#/lib/topics/queries.ts";
 
 export const Route = createFileRoute("/_auth/app/topics/$topicSlug/")({
@@ -71,7 +70,11 @@ function TopicPage() {
         </div>
       </div>
 
-      <MixedRecallCard topicName={topic.name} mixedRecall={topic.mixedRecall} />
+      <MixedPracticeCard
+        topicSlug={topic.slug}
+        topicName={topic.name}
+        todoCount={topic.mixedPractice.todoCount}
+      />
 
       <h2 className="mt-8 mb-4 text-base font-semibold">Subtopics</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -85,64 +88,45 @@ function TopicPage() {
   );
 }
 
-function MixedRecallCard({
+function MixedPracticeCard({
+  topicSlug,
   topicName,
-  mixedRecall,
+  todoCount,
 }: {
+  readonly topicSlug: string;
   readonly topicName: string;
-  readonly mixedRecall: TopicDetail["mixedRecall"];
+  readonly todoCount: number;
 }) {
-  const { inRotation, confirmedSolid, dueForReview, lastPracticedAt } = mixedRecall;
-
   return (
     <div className="rounded-2xl border border-gold/30 bg-linear-to-br from-gold/15 to-card p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-gold">
-          <LayersIcon className="size-6" aria-hidden="true" />
+          <ShuffleIcon className="size-6" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h2 className="text-base font-bold">Mixed Recall — {topicName}</h2>
-            {inRotation > 0 && (
+            <h2 className="text-base font-bold">Mixed Practice — {topicName}</h2>
+            {todoCount > 0 && (
               <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-bold text-gold">
-                {inRotation} in rotation
+                {todoCount} available
               </span>
             )}
           </div>
-          {inRotation > 0 ? (
-            <>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Prioritizes questions you've solved but haven't reconfirmed cold in the last 2
-                weeks, plus anything left half-finished — pulled from every subtopic above with no
-                repeats.
-              </p>
-              <div className="mt-3 h-1.5 max-w-80 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-gold"
-                  style={{ width: `${Math.round((confirmedSolid / inRotation) * 100)}%` }}
-                />
-              </div>
-              <span className="mt-1.5 block font-mono text-xs text-muted-foreground">
-                {confirmedSolid} confirmed solid · {dueForReview} due for review
-                {lastPracticedAt &&
-                  ` · last practiced ${formatRelativeTime(new Date(lastPracticedAt))}`}
-              </span>
-            </>
-          ) : (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Nothing in rotation yet — solve or attempt a question below to start building your
-              recall queue.
-            </p>
-          )}
+          <p className="mt-1 text-sm text-muted-foreground">
+            {todoCount > 0
+              ? "A standalone pool of problems for this topic that don't appear in any subtopic above — no pattern label to give it away, closer to how it shows up in a real interview."
+              : "Every question in this topic's mixed practice pool has been solved — nothing left to mix in."}
+          </p>
         </div>
-        <button
-          type="button"
-          disabled
-          title="Coming soon"
-          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-gold-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Start Mixed Recall
-        </button>
+        {todoCount > 0 && (
+          <Link
+            to="/app/topics/$topicSlug/mixed-practice"
+            params={{ topicSlug }}
+            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-gold-foreground hover:bg-gold/90"
+          >
+            Start Mixed Practice
+          </Link>
+        )}
       </div>
     </div>
   );

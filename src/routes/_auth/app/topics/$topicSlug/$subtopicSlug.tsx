@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ChevronRightIcon, ExternalLinkIcon } from "lucide-react";
-import { useState } from "react";
+import { isValidElement, useState } from "react";
 import Markdown from "react-markdown";
 
+import { CodeBlock } from "#/components/code-block.tsx";
 import { QuestionStatusIcon } from "#/components/question-status-icon.tsx";
 import { toast } from "#/components/ui/toast.tsx";
 import type { Difficulty, QuestionStatus } from "#/lib/db/schema/types.ts";
@@ -478,12 +479,15 @@ function MarkdownContent({ content }: { readonly content: string }) {
           code: (props) => (
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs" {...props} />
           ),
-          pre: (props) => (
-            <pre
-              className="overflow-x-auto rounded-xl bg-muted p-4 font-mono text-xs [&_code]:bg-transparent [&_code]:p-0"
-              {...props}
-            />
-          ),
+          pre: ({ children }) => {
+            if (isValidElement<{ className?: string; children?: React.ReactNode }>(children)) {
+              const language = /language-(\w+)/.exec(children.props.className ?? "")?.[1];
+              const code =
+                typeof children.props.children === "string" ? children.props.children : "";
+              return <CodeBlock code={code.replace(/\n$/, "")} language={language} />;
+            }
+            return <pre>{children}</pre>;
+          },
         }}
       >
         {content}

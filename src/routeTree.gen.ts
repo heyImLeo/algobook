@@ -16,11 +16,14 @@ import { Route as AuthAppRouteRouteImport } from './routes/_auth/app/route'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as AuthAppIndexRouteImport } from './routes/_auth/app/index'
+import { Route as AuthAppComplexityReferenceRouteImport } from './routes/_auth/app/complexity-reference'
 import { Route as AuthAppPatternCheatsheetRouteImport } from './routes/_auth/app/pattern-cheatsheet'
+import { Route as AuthAppPythonReferenceRouteImport } from './routes/_auth/app/python-reference'
 import { Route as AuthAppStudyPlanRouteImport } from './routes/_auth/app/study-plan'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthAppTopicsTopicSlugIndexRouteImport } from './routes/_auth/app/topics/$topicSlug/index'
 import { Route as AuthAppTopicsTopicSlugSubtopicSlugRouteImport } from './routes/_auth/app/topics/$topicSlug/$subtopicSlug'
+import { Route as AuthAppTopicsTopicSlugMixedPracticeRouteImport } from './routes/_auth/app/topics/$topicSlug/mixed-practice'
 import { Route as AuthAppTopicsTopicSlugSubtopicSlugQuestionSlugRouteImport } from './routes/_auth/app/topics/$topicSlug/$subtopicSlug.$questionSlug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -56,12 +59,23 @@ const AuthAppIndexRoute = AuthAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthAppRouteRoute,
 } as any)
+const AuthAppComplexityReferenceRoute =
+  AuthAppComplexityReferenceRouteImport.update({
+    id: '/complexity-reference',
+    path: '/complexity-reference',
+    getParentRoute: () => AuthAppRouteRoute,
+  } as any)
 const AuthAppPatternCheatsheetRoute =
   AuthAppPatternCheatsheetRouteImport.update({
     id: '/pattern-cheatsheet',
     path: '/pattern-cheatsheet',
     getParentRoute: () => AuthAppRouteRoute,
   } as any)
+const AuthAppPythonReferenceRoute = AuthAppPythonReferenceRouteImport.update({
+  id: '/python-reference',
+  path: '/python-reference',
+  getParentRoute: () => AuthAppRouteRoute,
+} as any)
 const AuthAppStudyPlanRoute = AuthAppStudyPlanRouteImport.update({
   id: '/study-plan',
   path: '/study-plan',
@@ -84,6 +98,12 @@ const AuthAppTopicsTopicSlugSubtopicSlugRoute =
     path: '/topics/$topicSlug/$subtopicSlug',
     getParentRoute: () => AuthAppRouteRoute,
   } as any)
+const AuthAppTopicsTopicSlugMixedPracticeRoute =
+  AuthAppTopicsTopicSlugMixedPracticeRouteImport.update({
+    id: '/topics/$topicSlug/mixed-practice',
+    path: '/topics/$topicSlug/mixed-practice',
+    getParentRoute: () => AuthAppRouteRoute,
+  } as any)
 const AuthAppTopicsTopicSlugSubtopicSlugQuestionSlugRoute =
   AuthAppTopicsTopicSlugSubtopicSlugQuestionSlugRouteImport.update({
     id: '/$questionSlug',
@@ -96,11 +116,14 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthAppRouteRouteWithChildren
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/app/complexity-reference': typeof AuthAppComplexityReferenceRoute
   '/app/pattern-cheatsheet': typeof AuthAppPatternCheatsheetRoute
+  '/app/python-reference': typeof AuthAppPythonReferenceRoute
   '/app/study-plan': typeof AuthAppStudyPlanRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/': typeof AuthAppIndexRoute
   '/app/topics/$topicSlug/$subtopicSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren
+  '/app/topics/$topicSlug/mixed-practice': typeof AuthAppTopicsTopicSlugMixedPracticeRoute
   '/app/topics/$topicSlug/': typeof AuthAppTopicsTopicSlugIndexRoute
   '/app/topics/$topicSlug/$subtopicSlug/$questionSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugQuestionSlugRoute
 }
@@ -108,11 +131,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/app/complexity-reference': typeof AuthAppComplexityReferenceRoute
   '/app/pattern-cheatsheet': typeof AuthAppPatternCheatsheetRoute
+  '/app/python-reference': typeof AuthAppPythonReferenceRoute
   '/app/study-plan': typeof AuthAppStudyPlanRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app': typeof AuthAppIndexRoute
   '/app/topics/$topicSlug/$subtopicSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren
+  '/app/topics/$topicSlug/mixed-practice': typeof AuthAppTopicsTopicSlugMixedPracticeRoute
   '/app/topics/$topicSlug': typeof AuthAppTopicsTopicSlugIndexRoute
   '/app/topics/$topicSlug/$subtopicSlug/$questionSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugQuestionSlugRoute
 }
@@ -124,11 +150,14 @@ export interface FileRoutesById {
   '/_auth/app': typeof AuthAppRouteRouteWithChildren
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
+  '/_auth/app/complexity-reference': typeof AuthAppComplexityReferenceRoute
   '/_auth/app/pattern-cheatsheet': typeof AuthAppPatternCheatsheetRoute
+  '/_auth/app/python-reference': typeof AuthAppPythonReferenceRoute
   '/_auth/app/study-plan': typeof AuthAppStudyPlanRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_auth/app/': typeof AuthAppIndexRoute
   '/_auth/app/topics/$topicSlug/$subtopicSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren
+  '/_auth/app/topics/$topicSlug/mixed-practice': typeof AuthAppTopicsTopicSlugMixedPracticeRoute
   '/_auth/app/topics/$topicSlug/': typeof AuthAppTopicsTopicSlugIndexRoute
   '/_auth/app/topics/$topicSlug/$subtopicSlug/$questionSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugQuestionSlugRoute
 }
@@ -139,11 +168,14 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/signup'
+    | '/app/complexity-reference'
     | '/app/pattern-cheatsheet'
+    | '/app/python-reference'
     | '/app/study-plan'
     | '/api/auth/$'
     | '/app/'
     | '/app/topics/$topicSlug/$subtopicSlug'
+    | '/app/topics/$topicSlug/mixed-practice'
     | '/app/topics/$topicSlug/'
     | '/app/topics/$topicSlug/$subtopicSlug/$questionSlug'
   fileRoutesByTo: FileRoutesByTo
@@ -151,11 +183,14 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
+    | '/app/complexity-reference'
     | '/app/pattern-cheatsheet'
+    | '/app/python-reference'
     | '/app/study-plan'
     | '/api/auth/$'
     | '/app'
     | '/app/topics/$topicSlug/$subtopicSlug'
+    | '/app/topics/$topicSlug/mixed-practice'
     | '/app/topics/$topicSlug'
     | '/app/topics/$topicSlug/$subtopicSlug/$questionSlug'
   id:
@@ -166,11 +201,14 @@ export interface FileRouteTypes {
     | '/_auth/app'
     | '/_guest/login'
     | '/_guest/signup'
+    | '/_auth/app/complexity-reference'
     | '/_auth/app/pattern-cheatsheet'
+    | '/_auth/app/python-reference'
     | '/_auth/app/study-plan'
     | '/api/auth/$'
     | '/_auth/app/'
     | '/_auth/app/topics/$topicSlug/$subtopicSlug'
+    | '/_auth/app/topics/$topicSlug/mixed-practice'
     | '/_auth/app/topics/$topicSlug/'
     | '/_auth/app/topics/$topicSlug/$subtopicSlug/$questionSlug'
   fileRoutesById: FileRoutesById
@@ -233,11 +271,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAppIndexRouteImport
       parentRoute: typeof AuthAppRouteRoute
     }
+    '/_auth/app/complexity-reference': {
+      id: '/_auth/app/complexity-reference'
+      path: '/complexity-reference'
+      fullPath: '/app/complexity-reference'
+      preLoaderRoute: typeof AuthAppComplexityReferenceRouteImport
+      parentRoute: typeof AuthAppRouteRoute
+    }
     '/_auth/app/pattern-cheatsheet': {
       id: '/_auth/app/pattern-cheatsheet'
       path: '/pattern-cheatsheet'
       fullPath: '/app/pattern-cheatsheet'
       preLoaderRoute: typeof AuthAppPatternCheatsheetRouteImport
+      parentRoute: typeof AuthAppRouteRoute
+    }
+    '/_auth/app/python-reference': {
+      id: '/_auth/app/python-reference'
+      path: '/python-reference'
+      fullPath: '/app/python-reference'
+      preLoaderRoute: typeof AuthAppPythonReferenceRouteImport
       parentRoute: typeof AuthAppRouteRoute
     }
     '/_auth/app/study-plan': {
@@ -268,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAppTopicsTopicSlugSubtopicSlugRouteImport
       parentRoute: typeof AuthAppRouteRoute
     }
+    '/_auth/app/topics/$topicSlug/mixed-practice': {
+      id: '/_auth/app/topics/$topicSlug/mixed-practice'
+      path: '/topics/$topicSlug/mixed-practice'
+      fullPath: '/app/topics/$topicSlug/mixed-practice'
+      preLoaderRoute: typeof AuthAppTopicsTopicSlugMixedPracticeRouteImport
+      parentRoute: typeof AuthAppRouteRoute
+    }
     '/_auth/app/topics/$topicSlug/$subtopicSlug/$questionSlug': {
       id: '/_auth/app/topics/$topicSlug/$subtopicSlug/$questionSlug'
       path: '/$questionSlug'
@@ -294,19 +353,26 @@ const AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren =
   )
 
 interface AuthAppRouteRouteChildren {
+  AuthAppComplexityReferenceRoute: typeof AuthAppComplexityReferenceRoute
   AuthAppPatternCheatsheetRoute: typeof AuthAppPatternCheatsheetRoute
+  AuthAppPythonReferenceRoute: typeof AuthAppPythonReferenceRoute
   AuthAppStudyPlanRoute: typeof AuthAppStudyPlanRoute
   AuthAppIndexRoute: typeof AuthAppIndexRoute
   AuthAppTopicsTopicSlugSubtopicSlugRoute: typeof AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren
+  AuthAppTopicsTopicSlugMixedPracticeRoute: typeof AuthAppTopicsTopicSlugMixedPracticeRoute
   AuthAppTopicsTopicSlugIndexRoute: typeof AuthAppTopicsTopicSlugIndexRoute
 }
 
 const AuthAppRouteRouteChildren: AuthAppRouteRouteChildren = {
+  AuthAppComplexityReferenceRoute: AuthAppComplexityReferenceRoute,
   AuthAppPatternCheatsheetRoute: AuthAppPatternCheatsheetRoute,
+  AuthAppPythonReferenceRoute: AuthAppPythonReferenceRoute,
   AuthAppStudyPlanRoute: AuthAppStudyPlanRoute,
   AuthAppIndexRoute: AuthAppIndexRoute,
   AuthAppTopicsTopicSlugSubtopicSlugRoute:
     AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren,
+  AuthAppTopicsTopicSlugMixedPracticeRoute:
+    AuthAppTopicsTopicSlugMixedPracticeRoute,
   AuthAppTopicsTopicSlugIndexRoute: AuthAppTopicsTopicSlugIndexRoute,
 }
 

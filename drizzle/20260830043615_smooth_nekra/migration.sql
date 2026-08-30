@@ -1,0 +1,1 @@
+ALTER TABLE "subtopic" ADD COLUMN "is_mixed_pool" boolean DEFAULT false NOT NULL;
