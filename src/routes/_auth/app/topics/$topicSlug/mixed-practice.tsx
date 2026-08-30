@@ -24,8 +24,9 @@ const DIFFICULTY_STYLES: Record<Difficulty, string> = {
   hard: "text-destructive",
 };
 
-// A question in the mix is either untouched or attempted (solved ones are
-// excluded); clicking its status icon advances it one step further.
+// Clicking a question's status icon advances it one step further — the pool
+// itself is permanent, so a solved question stays in the list marked solved
+// rather than dropping out.
 const NEXT_STATUS: Record<QuestionStatus, QuestionStatus> = {
   todo: "attempted",
   attempted: "solved",
@@ -58,14 +59,14 @@ function MixedPracticePage() {
       <p className="mb-8 max-w-2xl text-sm text-muted-foreground">
         A standalone pool of {queue.topic.name} problems that don&apos;t appear in any subtopic
         above — no pattern label attached, closer to how a problem shows up in a real interview.
-        Sorted easiest to hardest.
+        Unsolved questions come first, sorted easiest to hardest.
       </p>
 
       {queue.questions.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-8 text-center">
-          <h2 className="mb-2 text-lg font-bold">Nothing left to mix in</h2>
+          <h2 className="mb-2 text-lg font-bold">No mixed practice pool yet</h2>
           <p className="text-sm text-muted-foreground">
-            Every question in {queue.topic.name}&apos;s mixed practice pool has been solved.
+            {queue.topic.name} doesn&apos;t have any mixed practice questions yet.
           </p>
         </div>
       ) : (
@@ -75,7 +76,7 @@ function MixedPracticePage() {
               Practice questions
             </span>
             <span className="font-mono text-xs text-muted-foreground">
-              {queue.questions.length} remaining
+              {queue.solved}/{queue.total} solved
             </span>
           </div>
           <div className="flex flex-col">

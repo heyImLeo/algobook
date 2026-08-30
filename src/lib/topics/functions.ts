@@ -163,6 +163,8 @@ export interface MixedPracticeQuestion {
 
 export interface MixedPracticeQueue {
   topic: { slug: string; name: string };
+  solved: number;
+  total: number;
   questions: MixedPracticeQuestion[];
 }
 
@@ -172,8 +174,10 @@ const DIFFICULTY_ORDER: Record<Difficulty, number> = { easy: 0, medium: 1, hard:
  * A standalone pool of questions for the topic that don't appear in any of
  * its subtopics — e.g. Graphs' mixed practice is its own set of graph
  * problems, disjoint from anything already seen under BFS, DFS, Dijkstra,
- * etc. Only not-yet-solved questions from that pool are returned, sorted
- * easiest to hardest.
+ * etc. Every pool question is always returned (solved ones stay visible,
+ * marked solved) so the list is a stable, permanent set rather than one that
+ * shrinks as you go. Sorted with unsolved questions first, easiest to
+ * hardest within each group.
  */
 export const $getMixedPracticeQueue = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
@@ -185,12 +189,13 @@ export const $getMixedPracticeQueue = createServerFn({ method: "GET" })
     const poolSubtopic = topic.subtopics.find((subtopic) => subtopic.isMixedPool);
 
     const questions: MixedPracticeQuestion[] = [];
+    let solved = 0;
     if (poolSubtopic) {
       const progressByQuestionId = await getProgressByQuestionId(context.user.id);
 
       for (const question of poolSubtopic.allQuestions) {
         const status = progressByQuestionId.get(question.id)?.status ?? "todo";
-        if (status === "solved") continue;
+        if (status === "solved") solved += 1;
 
         questions.push({
           id: question.id,
@@ -205,9 +210,19 @@ export const $getMixedPracticeQueue = createServerFn({ method: "GET" })
       }
     }
 
-    questions.sort((a, b) => DIFFICULTY_ORDER[a.difficulty] - DIFFICULTY_ORDER[b.difficulty]);
+    questions.sort((a, b) => {
+      const aSolved = a.status === "solved" ? 1 : 0;
+      const bSolved = b.status === "solved" ? 1 : 0;
+      if (aSolved !== bSolved) return aSolved - bSolved;
+      return DIFFICULTY_ORDER[a.difficulty] - DIFFICULTY_ORDER[b.difficulty];
+    });
 
-    return { topic: { slug: topic.slug, name: topic.name }, questions };
+    return {
+      topic: { slug: topic.slug, name: topic.name },
+      solved,
+      total: questions.length,
+      questions,
+    };
   });
 
 export interface SubtopicQuestion {
