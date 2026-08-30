@@ -70,11 +70,11 @@ function AppLayout() {
 }
 
 const RESOURCE_LINKS = [
-  { icon: SparklesIcon, label: "Pattern Cheatsheet" },
-  { icon: ZapIcon, label: "Complexity Reference" },
-  { icon: CalendarIcon, label: "Study Plan" },
-  { icon: TargetIcon, label: "Interview Tips" },
-  { icon: Code2Icon, label: "Python Reference" },
+  { icon: SparklesIcon, label: "Pattern Cheatsheet", to: "/app/pattern-cheatsheet" as const },
+  { icon: ZapIcon, label: "Complexity Reference", to: undefined },
+  { icon: CalendarIcon, label: "Study Plan", to: undefined },
+  { icon: TargetIcon, label: "Interview Tips", to: undefined },
+  { icon: Code2Icon, label: "Python Reference", to: undefined },
 ];
 
 function TopicsSidebar() {
@@ -136,9 +136,14 @@ function TopicsSidebar() {
           <SidebarGroupLabel>Resources</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {RESOURCE_LINKS.map(({ icon: Icon, label }) => (
+              {RESOURCE_LINKS.map(({ icon: Icon, label, to }) => (
                 <SidebarMenuItem key={label}>
-                  <SidebarMenuButton disabled title="Coming soon">
+                  <SidebarMenuButton
+                    disabled={!to}
+                    title={to ? undefined : "Coming soon"}
+                    className="[&.active]:bg-sidebar-accent [&.active]:font-medium [&.active]:text-sidebar-accent-foreground"
+                    render={to ? <Link to={to} /> : undefined}
+                  >
                     <Icon aria-hidden="true" />
                     <span>{label}</span>
                   </SidebarMenuButton>

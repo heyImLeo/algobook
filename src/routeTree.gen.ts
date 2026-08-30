@@ -16,6 +16,7 @@ import { Route as AuthAppRouteRouteImport } from './routes/_auth/app/route'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as AuthAppIndexRouteImport } from './routes/_auth/app/index'
+import { Route as AuthAppPatternCheatsheetRouteImport } from './routes/_auth/app/pattern-cheatsheet'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthAppTopicsTopicSlugIndexRouteImport } from './routes/_auth/app/topics/$topicSlug/index'
 import { Route as AuthAppTopicsTopicSlugSubtopicSlugRouteImport } from './routes/_auth/app/topics/$topicSlug/$subtopicSlug'
@@ -54,6 +55,12 @@ const AuthAppIndexRoute = AuthAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthAppRouteRoute,
 } as any)
+const AuthAppPatternCheatsheetRoute =
+  AuthAppPatternCheatsheetRouteImport.update({
+    id: '/pattern-cheatsheet',
+    path: '/pattern-cheatsheet',
+    getParentRoute: () => AuthAppRouteRoute,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthAppRouteRouteWithChildren
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/app/pattern-cheatsheet': typeof AuthAppPatternCheatsheetRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/': typeof AuthAppIndexRoute
   '/app/topics/$topicSlug/$subtopicSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren
@@ -93,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/app/pattern-cheatsheet': typeof AuthAppPatternCheatsheetRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app': typeof AuthAppIndexRoute
   '/app/topics/$topicSlug/$subtopicSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren
@@ -107,6 +116,7 @@ export interface FileRoutesById {
   '/_auth/app': typeof AuthAppRouteRouteWithChildren
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
+  '/_auth/app/pattern-cheatsheet': typeof AuthAppPatternCheatsheetRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_auth/app/': typeof AuthAppIndexRoute
   '/_auth/app/topics/$topicSlug/$subtopicSlug': typeof AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/signup'
+    | '/app/pattern-cheatsheet'
     | '/api/auth/$'
     | '/app/'
     | '/app/topics/$topicSlug/$subtopicSlug'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
+    | '/app/pattern-cheatsheet'
     | '/api/auth/$'
     | '/app'
     | '/app/topics/$topicSlug/$subtopicSlug'
@@ -143,6 +155,7 @@ export interface FileRouteTypes {
     | '/_auth/app'
     | '/_guest/login'
     | '/_guest/signup'
+    | '/_auth/app/pattern-cheatsheet'
     | '/api/auth/$'
     | '/_auth/app/'
     | '/_auth/app/topics/$topicSlug/$subtopicSlug'
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAppIndexRouteImport
       parentRoute: typeof AuthAppRouteRoute
     }
+    '/_auth/app/pattern-cheatsheet': {
+      id: '/_auth/app/pattern-cheatsheet'
+      path: '/pattern-cheatsheet'
+      fullPath: '/app/pattern-cheatsheet'
+      preLoaderRoute: typeof AuthAppPatternCheatsheetRouteImport
+      parentRoute: typeof AuthAppRouteRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -255,12 +275,14 @@ const AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren =
   )
 
 interface AuthAppRouteRouteChildren {
+  AuthAppPatternCheatsheetRoute: typeof AuthAppPatternCheatsheetRoute
   AuthAppIndexRoute: typeof AuthAppIndexRoute
   AuthAppTopicsTopicSlugSubtopicSlugRoute: typeof AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren
   AuthAppTopicsTopicSlugIndexRoute: typeof AuthAppTopicsTopicSlugIndexRoute
 }
 
 const AuthAppRouteRouteChildren: AuthAppRouteRouteChildren = {
+  AuthAppPatternCheatsheetRoute: AuthAppPatternCheatsheetRoute,
   AuthAppIndexRoute: AuthAppIndexRoute,
   AuthAppTopicsTopicSlugSubtopicSlugRoute:
     AuthAppTopicsTopicSlugSubtopicSlugRouteWithChildren,
