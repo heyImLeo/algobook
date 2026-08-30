@@ -16,6 +16,7 @@ import { ThemeToggle } from "#/components/theme-toggle.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -153,6 +154,9 @@ function TopicsSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <UserMenu />
+        <p className="px-2 text-center font-mono text-xs tracking-widest text-sidebar-foreground/20">
+          ↑↑↓↓←→←→ba
+        </p>
       </SidebarFooter>
     </Sidebar>
   );
@@ -211,12 +215,14 @@ function UserMenu() {
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top">
-        <DropdownMenuLabel>
-          <div className="flex flex-col">
-            <span className="font-medium text-foreground">{user.name}</span>
-            <span className="text-xs text-muted-foreground">{user.email}</span>
-          </div>
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>
+            <div className="flex flex-col">
+              <span className="font-medium text-foreground">{user.name}</span>
+              <span className="text-xs text-muted-foreground">{user.email}</span>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"

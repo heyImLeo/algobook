@@ -2,8 +2,29 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { authMiddleware } from "#/lib/auth/middleware.ts";
+import { CURRICULUM, TOPIC_BY_SLUG } from "#/lib/curriculum/content.ts";
 import { db } from "#/lib/db/index.ts";
 import type { Difficulty, QuestionStatus } from "#/lib/db/schema/types.ts";
+
+async function getSolvedQuestionIds(userId: string): Promise<Set<string>> {
+  const rows = await db.query.questionProgress.findMany({
+    where: { userId, status: "solved" },
+    columns: { questionId: true },
+  });
+  return new Set(rows.map((row) => row.questionId));
+}
+
+async function getProgressByQuestionId(
+  userId: string,
+): Promise<
+  Map<string, { status: QuestionStatus; resolvableIn2Weeks: boolean; lastPracticedAt: Date | null }>
+> {
+  const rows = await db.query.questionProgress.findMany({
+    where: { userId },
+    columns: { questionId: true, status: true, resolvableIn2Weeks: true, lastPracticedAt: true },
+  });
+  return new Map(rows.map((row) => [row.questionId, row]));
+}
 
 export interface SidebarTopic {
   id: string;
@@ -17,35 +38,26 @@ export interface SidebarTopic {
 export const $getSidebarTopics = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }): Promise<SidebarTopic[]> => {
-    const userId = context.user.id;
+    const solvedIds = await getSolvedQuestionIds(context.user.id);
 
-    const topicRows = await db.query.topic.findMany({
-      orderBy: { sortOrder: "asc" },
-      with: {
-        subtopics: {
-          where: { isMixedPool: false },
-          with: {
-            questions: {
-              columns: { id: true },
-              with: {
-                progress: { where: { userId }, columns: { status: true } },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return topicRows.map((topic) => {
+    return CURRICULUM.map((topic) => {
       let solved = 0;
       let total = 0;
       for (const subtopic of topic.subtopics) {
-        for (const question of subtopic.questions) {
+        if (subtopic.isMixedPool) continue;
+        for (const question of subtopic.allQuestions) {
           total += 1;
-          if (question.progress[0]?.status === "solved") solved += 1;
+          if (solvedIds.has(question.id)) solved += 1;
         }
       }
-      return { id: topic.id, slug: topic.slug, name: topic.name, icon: topic.icon, solved, total };
+      return {
+        id: topic.slug,
+        slug: topic.slug,
+        name: topic.name,
+        icon: topic.icon,
+        solved,
+        total,
+      };
     });
   });
 
@@ -83,26 +95,10 @@ export const $getTopicDetail = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .validator(getTopicDetailInput)
   .handler(async ({ context, data }): Promise<TopicDetail | null> => {
-    const userId = context.user.id;
-
-    const topic = await db.query.topic.findFirst({
-      where: { slug: data.topicSlug },
-      with: {
-        subtopics: {
-          orderBy: { sortOrder: "asc" },
-          with: {
-            questions: {
-              columns: { id: true },
-              with: {
-                progress: { where: { userId }, columns: { status: true } },
-              },
-            },
-          },
-        },
-      },
-    });
-
+    const topic = TOPIC_BY_SLUG.get(data.topicSlug);
     if (!topic) return null;
+
+    const solvedIds = await getSolvedQuestionIds(context.user.id);
 
     let topicSolved = 0;
     let topicTotal = 0;
@@ -112,10 +108,10 @@ export const $getTopicDetail = createServerFn({ method: "GET" })
 
     for (const subtopic of topic.subtopics) {
       let solved = 0;
-      const total = subtopic.questions.length;
+      const total = subtopic.allQuestions.length;
 
-      for (const question of subtopic.questions) {
-        if (question.progress[0]?.status === "solved") solved += 1;
+      for (const question of subtopic.allQuestions) {
+        if (solvedIds.has(question.id)) solved += 1;
       }
 
       if (subtopic.isMixedPool) {
@@ -127,7 +123,7 @@ export const $getTopicDetail = createServerFn({ method: "GET" })
       topicTotal += total;
 
       subtopics.push({
-        id: subtopic.id,
+        id: subtopic.slug,
         slug: subtopic.slug,
         name: subtopic.name,
         description: subtopic.description,
@@ -140,7 +136,7 @@ export const $getTopicDetail = createServerFn({ method: "GET" })
     }
 
     return {
-      id: topic.id,
+      id: topic.slug,
       slug: topic.slug,
       name: topic.name,
       description: topic.description,
@@ -183,34 +179,17 @@ export const $getMixedPracticeQueue = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .validator(getTopicDetailInput)
   .handler(async ({ context, data }): Promise<MixedPracticeQueue | null> => {
-    const userId = context.user.id;
-
-    const topic = await db.query.topic.findFirst({
-      where: { slug: data.topicSlug },
-      columns: { slug: true, name: true },
-      with: {
-        subtopics: {
-          where: { isMixedPool: true },
-          columns: { slug: true },
-          with: {
-            questions: {
-              orderBy: { sortOrder: "asc" },
-              with: {
-                progress: { where: { userId }, columns: { status: true } },
-              },
-            },
-          },
-        },
-      },
-    });
+    const topic = TOPIC_BY_SLUG.get(data.topicSlug);
     if (!topic) return null;
 
-    const poolSubtopic = topic.subtopics[0];
+    const poolSubtopic = topic.subtopics.find((subtopic) => subtopic.isMixedPool);
 
     const questions: MixedPracticeQuestion[] = [];
     if (poolSubtopic) {
-      for (const question of poolSubtopic.questions) {
-        const status = question.progress[0]?.status ?? "todo";
+      const progressByQuestionId = await getProgressByQuestionId(context.user.id);
+
+      for (const question of poolSubtopic.allQuestions) {
+        const status = progressByQuestionId.get(question.id)?.status ?? "todo";
         if (status === "solved") continue;
 
         questions.push({
@@ -288,69 +267,18 @@ export const $getSubtopicDetail = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .validator(getSubtopicDetailInput)
   .handler(async ({ context, data }): Promise<SubtopicDetail | null> => {
-    const userId = context.user.id;
-
-    const topic = await db.query.topic.findFirst({
-      where: { slug: data.topicSlug },
-      columns: { slug: true, name: true, icon: true },
-      with: {
-        subtopics: {
-          where: { slug: { ne: data.subtopicSlug }, isMixedPool: false },
-          orderBy: { sortOrder: "asc" },
-          limit: 2,
-          columns: { slug: true, name: true, description: true },
-        },
-      },
-    });
+    const topic = TOPIC_BY_SLUG.get(data.topicSlug);
     if (!topic) return null;
 
-    const subtopic = await db.query.subtopic.findFirst({
-      where: { slug: data.subtopicSlug, topic: { slug: data.topicSlug } },
-      with: {
-        groups: {
-          orderBy: { sortOrder: "asc" },
-          with: {
-            questions: {
-              orderBy: { sortOrder: "asc" },
-              with: {
-                progress: {
-                  where: { userId },
-                  columns: { status: true, resolvableIn2Weeks: true, lastPracticedAt: true },
-                },
-              },
-            },
-          },
-        },
-        questions: {
-          where: { groupId: { isNull: true } },
-          orderBy: { sortOrder: "asc" },
-          with: {
-            progress: {
-              where: { userId },
-              columns: { status: true, resolvableIn2Weeks: true, lastPracticedAt: true },
-            },
-          },
-        },
-      },
-    });
+    const subtopic = topic.subtopics.find((s) => s.slug === data.subtopicSlug);
     if (!subtopic) return null;
 
-    type RawQuestion = {
-      id: string;
-      slug: string;
-      title: string;
-      leetcodeNumber: number | null;
-      url: string | null;
-      difficulty: Difficulty;
-      progress: {
-        status: QuestionStatus;
-        resolvableIn2Weeks: boolean;
-        lastPracticedAt: Date | null;
-      }[];
-    };
+    const progressByQuestionId = await getProgressByQuestionId(context.user.id);
 
-    const toPublicQuestion = (question: RawQuestion): SubtopicQuestion => {
-      const progress = question.progress[0];
+    const toPublicQuestion = (
+      question: (typeof subtopic.allQuestions)[number],
+    ): SubtopicQuestion => {
+      const progress = progressByQuestionId.get(question.id);
       const status = progress?.status ?? "todo";
       const dueForReview =
         status === "attempted" || (status === "solved" && !progress?.resolvableIn2Weeks);
@@ -368,13 +296,13 @@ export const $getSubtopicDetail = createServerFn({ method: "GET" })
     };
 
     const groups: SubtopicQuestionGroup[] = subtopic.groups.map((group) => ({
-      id: group.id,
+      id: group.name,
       name: group.name,
       description: group.description,
       questions: group.questions.map(toPublicQuestion),
     }));
 
-    const questions = subtopic.questions.map(toPublicQuestion);
+    const questions = subtopic.ungroupedQuestions.map(toPublicQuestion);
 
     const allQuestions = [...groups.flatMap((group) => group.questions), ...questions];
     const solved = allQuestions.filter((question) => question.status === "solved").length;
@@ -384,14 +312,17 @@ export const $getSubtopicDetail = createServerFn({ method: "GET" })
       ...subtopic.groups.flatMap((group) =>
         group.questions.map((question) => ({ question, groupName: group.name as string | null })),
       ),
-      ...subtopic.questions.map((question) => ({ question, groupName: null as string | null })),
+      ...subtopic.ungroupedQuestions.map((question) => ({
+        question,
+        groupName: null as string | null,
+      })),
     ];
 
     const continueCandidate = rawQuestionsWithGroup
-      .filter(({ question }) => question.progress[0]?.status === "attempted")
+      .filter(({ question }) => progressByQuestionId.get(question.id)?.status === "attempted")
       .sort((a, b) => {
-        const aTime = a.question.progress[0]?.lastPracticedAt?.getTime() ?? 0;
-        const bTime = b.question.progress[0]?.lastPracticedAt?.getTime() ?? 0;
+        const aTime = progressByQuestionId.get(a.question.id)?.lastPracticedAt?.getTime() ?? 0;
+        const bTime = progressByQuestionId.get(b.question.id)?.lastPracticedAt?.getTime() ?? 0;
         return bTime - aTime;
       })[0];
 
@@ -405,9 +336,14 @@ export const $getSubtopicDetail = createServerFn({ method: "GET" })
         }
       : null;
 
+    const relatedSubtopics: RelatedSubtopic[] = topic.subtopics
+      .filter((s) => s.slug !== data.subtopicSlug && !s.isMixedPool)
+      .slice(0, 2)
+      .map((s) => ({ slug: s.slug, name: s.name, description: s.description }));
+
     return {
       topic: { slug: topic.slug, name: topic.name, icon: topic.icon },
-      id: subtopic.id,
+      id: subtopic.slug,
       slug: subtopic.slug,
       name: subtopic.name,
       description: subtopic.description,
@@ -421,6 +357,6 @@ export const $getSubtopicDetail = createServerFn({ method: "GET" })
       groups,
       questions,
       continueItem,
-      relatedSubtopics: topic.subtopics,
+      relatedSubtopics,
     };
   });

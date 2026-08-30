@@ -1,21 +1,12 @@
-import "@tanstack/react-start/server-only";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-
-import { env } from "#/env/server.ts";
-import * as schema from "#/lib/db/schema/index.ts";
-import { relations } from "#/lib/db/schema/relations.ts";
 import type { Difficulty } from "#/lib/db/schema/types.ts";
 
 /**
- * Idempotent seed for shared curriculum content (topics, subtopics, question
- * groups, questions). Safe to re-run: existing rows (matched by their unique
- * slug/name) are left untouched, never overwritten or deleted, so it never
- * clobbers content edited after seeding. Run with `pnpm db:seed`.
+ * The entire DSA curriculum — topics, subtopics, question groups, and
+ * questions — as static, build-time data. Nothing here is stored in the
+ * database; only per-user practice state (`questionProgress`) is. A
+ * question's stable id is `${topicSlug}/${subtopicSlug}/${questionSlug}`,
+ * which is what `questionProgress.questionId` stores.
  */
-
-const client = postgres(env.DATABASE_URL);
-const db = drizzle({ client, relations });
 
 interface TopicSeed {
   slug: string;
@@ -6060,10 +6051,11 @@ interface TopicContentSeed {
 }
 
 /**
- * Mixed Practice question pools, one per topic. Every question below is
- * verified (see `pnpm db:seed`'s duplicate check) to never also appear as a
- * subtopic question — Mixed Practice must stay a disjoint set of problems,
- * not a re-shuffling of ones already seen in a subtopic.
+ * Mixed Practice question pools, one per topic. Every LeetCode number across
+ * this whole file is unique (verify with
+ * `grep -oP 'leetcodeNumber:\s*\K[0-9]+' src/lib/curriculum/content.ts | sort -n | uniq -d`)
+ * — Mixed Practice must stay a disjoint set of problems, not a re-shuffling
+ * of ones already seen in a subtopic.
  */
 const arraysMixedPracticeQuestions: QuestionSeed[] = [
   {
@@ -7690,95 +7682,147 @@ const topicContent: TopicContentSeed[] = [
   },
 ];
 
-async function seedTopics() {
-  await db.insert(schema.topic).values(topics).onConflictDoNothing({ target: schema.topic.slug });
+export interface CurriculumQuestion {
+  id: string;
+  slug: string;
+  title: string;
+  leetcodeNumber: number | null;
+  url: string | null;
+  difficulty: Difficulty;
+  sortOrder: number;
+  groupName: string | null;
+}
 
-  const rows = await db.query.topic.findMany({
-    where: { slug: { in: topics.map((t) => t.slug) } },
+export interface CurriculumGroup {
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  questions: CurriculumQuestion[];
+}
+
+export interface CurriculumSubtopic {
+  slug: string;
+  name: string;
+  description: string;
+  timeComplexity: string | null;
+  spaceComplexity: string | null;
+  bestFor: string | null;
+  referenceContent: string | null;
+  isMixedPool: boolean;
+  sortOrder: number;
+  groups: CurriculumGroup[];
+  ungroupedQuestions: CurriculumQuestion[];
+  allQuestions: CurriculumQuestion[];
+}
+
+export interface CurriculumTopic {
+  slug: string;
+  name: string;
+  description: string;
+  icon: string;
+  timeComplexityRange: string | null;
+  spaceComplexityRange: string | null;
+  sortOrder: number;
+  subtopics: CurriculumSubtopic[];
+}
+
+export interface FlatCurriculumQuestion extends CurriculumQuestion {
+  topicSlug: string;
+  topicName: string;
+  subtopicSlug: string;
+  subtopicName: string;
+  isMixedPool: boolean;
+}
+
+function byOrder<T extends { sortOrder: number }>(items: T[]): T[] {
+  return items.slice().sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+function buildCurriculum(): CurriculumTopic[] {
+  const contentByTopicSlug = new Map(topicContent.map((content) => [content.topicSlug, content]));
+
+  return byOrder(topics).map((topic): CurriculumTopic => {
+    const content = contentByTopicSlug.get(topic.slug);
+    if (!content) throw new Error(`No content defined for topic "${topic.slug}"`);
+
+    const subtopics = byOrder(content.subtopics).map((subtopic): CurriculumSubtopic => {
+      const questions = content.questionsBySubtopicSlug[subtopic.slug] ?? [];
+      const groupSeeds = content.groupsBySubtopicSlug?.[subtopic.slug] ?? [];
+
+      const toCurriculumQuestion = (question: QuestionSeed): CurriculumQuestion => ({
+        id: `${topic.slug}/${subtopic.slug}/${question.slug}`,
+        slug: question.slug,
+        title: question.title,
+        leetcodeNumber: question.leetcodeNumber ?? null,
+        url: question.url ?? null,
+        difficulty: question.difficulty,
+        sortOrder: question.sortOrder,
+        groupName: question.groupName ?? null,
+      });
+
+      const groups: CurriculumGroup[] = byOrder(groupSeeds).map((group) => ({
+        name: group.name,
+        description: group.description ?? null,
+        sortOrder: group.sortOrder,
+        questions: byOrder(questions.filter((question) => question.groupName === group.name)).map(
+          toCurriculumQuestion,
+        ),
+      }));
+
+      const ungroupedQuestions = byOrder(questions.filter((question) => !question.groupName)).map(
+        toCurriculumQuestion,
+      );
+
+      return {
+        slug: subtopic.slug,
+        name: subtopic.name,
+        description: subtopic.description,
+        timeComplexity: subtopic.timeComplexity ?? null,
+        spaceComplexity: subtopic.spaceComplexity ?? null,
+        bestFor: subtopic.bestFor ?? null,
+        referenceContent: subtopic.referenceContent ?? null,
+        isMixedPool: subtopic.isMixedPool ?? false,
+        sortOrder: subtopic.sortOrder,
+        groups,
+        ungroupedQuestions,
+        allQuestions: [...groups.flatMap((group) => group.questions), ...ungroupedQuestions],
+      };
+    });
+
+    return {
+      slug: topic.slug,
+      name: topic.name,
+      description: topic.description,
+      icon: topic.icon,
+      timeComplexityRange: topic.timeComplexityRange ?? null,
+      spaceComplexityRange: topic.spaceComplexityRange ?? null,
+      sortOrder: topic.sortOrder,
+      subtopics,
+    };
   });
-  return new Map(rows.map((row) => [row.slug, row.id]));
 }
 
-async function seedSubtopicsForTopic(topicId: string, subtopics: SubtopicSeed[]) {
-  await db
-    .insert(schema.subtopic)
-    .values(subtopics.map((s) => ({ ...s, topicId })))
-    .onConflictDoNothing({ target: [schema.subtopic.topicId, schema.subtopic.slug] });
+/** The full curriculum, topics in display order. */
+export const CURRICULUM: CurriculumTopic[] = buildCurriculum();
 
-  const rows = await db.query.subtopic.findMany({
-    where: { topicId, slug: { in: subtopics.map((s) => s.slug) } },
-  });
-  return new Map(rows.map((row) => [row.slug, row.id]));
-}
+export const TOPIC_BY_SLUG: ReadonlyMap<string, CurriculumTopic> = new Map(
+  CURRICULUM.map((topic) => [topic.slug, topic]),
+);
 
-async function seedGroupsForSubtopic(subtopicId: string, groups: GroupSeed[]) {
-  await db
-    .insert(schema.questionGroup)
-    .values(groups.map((g) => ({ ...g, subtopicId })))
-    .onConflictDoNothing({ target: [schema.questionGroup.subtopicId, schema.questionGroup.name] });
+/** Every question in the curriculum, flattened, each tagged with its topic/subtopic. */
+export const ALL_QUESTIONS: readonly FlatCurriculumQuestion[] = CURRICULUM.flatMap((topic) =>
+  topic.subtopics.flatMap((subtopic) =>
+    subtopic.allQuestions.map((question): FlatCurriculumQuestion => ({
+      ...question,
+      topicSlug: topic.slug,
+      topicName: topic.name,
+      subtopicSlug: subtopic.slug,
+      subtopicName: subtopic.name,
+      isMixedPool: subtopic.isMixedPool,
+    })),
+  ),
+);
 
-  const rows = await db.query.questionGroup.findMany({
-    where: { subtopicId, name: { in: groups.map((g) => g.name) } },
-  });
-  return new Map(rows.map((row) => [row.name, row.id]));
-}
-
-async function seedQuestionsForSubtopic(
-  subtopicId: string,
-  questions: QuestionSeed[],
-  groupIdByName?: Map<string, string>,
-) {
-  if (questions.length === 0) return;
-
-  await db
-    .insert(schema.question)
-    .values(
-      questions.map(({ groupName, ...q }) => ({
-        ...q,
-        subtopicId,
-        groupId: groupName ? groupIdByName?.get(groupName) : undefined,
-      })),
-    )
-    .onConflictDoNothing({ target: [schema.question.subtopicId, schema.question.slug] });
-}
-
-async function seedTopicContent(topicId: string, content: TopicContentSeed) {
-  const subtopicIdBySlug = await seedSubtopicsForTopic(topicId, content.subtopics);
-
-  let questionCount = 0;
-  for (const [slug, questions] of Object.entries(content.questionsBySubtopicSlug)) {
-    const subtopicId = subtopicIdBySlug.get(slug);
-    if (!subtopicId) throw new Error(`Subtopic "${slug}" was not seeded`);
-
-    const groups = content.groupsBySubtopicSlug?.[slug];
-    const groupIdByName = groups ? await seedGroupsForSubtopic(subtopicId, groups) : undefined;
-
-    await seedQuestionsForSubtopic(subtopicId, questions, groupIdByName);
-    questionCount += questions.length;
-  }
-
-  return { subtopicCount: content.subtopics.length, questionCount };
-}
-
-async function main() {
-  console.log("Seeding topics...");
-  const topicIdBySlug = await seedTopics();
-
-  for (const content of topicContent) {
-    const topicId = topicIdBySlug.get(content.topicSlug);
-    if (!topicId) throw new Error(`Topic "${content.topicSlug}" was not seeded`);
-
-    console.log(`Seeding ${content.topicSlug} content...`);
-    const { subtopicCount, questionCount } = await seedTopicContent(topicId, content);
-    console.log(`  ${content.topicSlug}: ${subtopicCount} subtopics, ${questionCount} questions.`);
-  }
-
-  console.log(`Done: ${topics.length} topics seeded.`);
-}
-
-main()
-  .catch((error: unknown) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(() => void client.end());
+export const QUESTION_BY_ID: ReadonlyMap<string, FlatCurriculumQuestion> = new Map(
+  ALL_QUESTIONS.map((question) => [question.id, question]),
+);

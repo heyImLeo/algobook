@@ -132,9 +132,9 @@ const FEATURES: Feature[] = [
   },
   {
     icon: ShuffleIcon,
-    title: "Mixed recall, built in",
+    title: "Mixed practice, built in",
     description:
-      "Each topic has a recall set of unique questions pulled from across its subtopics, so revision never repeats itself.",
+      "Each topic has its own pool of practice-only questions, separate from its subtopics and with no pattern label attached — closer to how problems show up in a real interview.",
   },
   {
     icon: LineChartIcon,
@@ -204,7 +204,9 @@ function TopicStrip() {
 function SiteFooter() {
   return (
     <footer className="flex items-center justify-between border-t border-border py-7 text-sm text-muted-foreground">
-      <span>© Algobook</span>
+      <span>
+        © Algobook <span className="tracking-widest text-muted-foreground/30">↑↑↓↓←→←→ba</span>
+      </span>
       <span className="inline-flex items-center gap-1.5">
         Made with{" "}
         <HeartIcon className="size-3.5 fill-current text-destructive" aria-hidden="true" />

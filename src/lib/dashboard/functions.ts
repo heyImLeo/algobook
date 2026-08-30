@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { authMiddleware } from "#/lib/auth/middleware.ts";
+import { CURRICULUM } from "#/lib/curriculum/content.ts";
 import { db } from "#/lib/db/index.ts";
 import type { QuestionStatus } from "#/lib/db/schema/types.ts";
 
@@ -65,21 +66,8 @@ export const $getDashboardStats = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<DashboardStats> => {
     const userId = context.user.id;
 
-    const topicRows = await db.query.topic.findMany({
-      orderBy: { sortOrder: "asc" },
-      with: {
-        subtopics: {
-          where: { isMixedPool: false },
-          with: {
-            questions: {
-              with: {
-                progress: { where: { userId } },
-              },
-            },
-          },
-        },
-      },
-    });
+    const progressRows = await db.query.questionProgress.findMany({ where: { userId } });
+    const progressByQuestionId = new Map(progressRows.map((row) => [row.questionId, row]));
 
     const topics: DashboardTopicProgress[] = [];
     const activity: ActivityWorkingItem[] = [];
@@ -92,19 +80,21 @@ export const $getDashboardStats = createServerFn({ method: "GET" })
 
     const weekStart = startOfWeekUtc(new Date());
 
-    for (const topic of topicRows) {
+    for (const topic of CURRICULUM) {
       let topicSolved = 0;
       let topicTotal = 0;
 
       for (const subtopic of topic.subtopics) {
+        if (subtopic.isMixedPool) continue;
+
         let subtopicSolved = 0;
-        const subtopicTotal = subtopic.questions.length;
+        const subtopicTotal = subtopic.allQuestions.length;
         const subtopicActivity: Omit<ActivityWorkingItem, "subtopicSolved" | "subtopicTotal">[] =
           [];
 
-        for (const question of subtopic.questions) {
+        for (const question of subtopic.allQuestions) {
           topicTotal += 1;
-          const progress = question.progress[0];
+          const progress = progressByQuestionId.get(question.id);
           if (!progress) continue;
 
           if (progress.status === "solved") {
@@ -139,7 +129,7 @@ export const $getDashboardStats = createServerFn({ method: "GET" })
       totalSolved += topicSolved;
       totalQuestions += topicTotal;
       topics.push({
-        id: topic.id,
+        id: topic.slug,
         slug: topic.slug,
         name: topic.name,
         icon: topic.icon,

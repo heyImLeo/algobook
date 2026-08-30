@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { authMiddleware } from "#/lib/auth/middleware.ts";
+import { TOPIC_BY_SLUG } from "#/lib/curriculum/content.ts";
 import { db } from "#/lib/db/index.ts";
 import type { QuestionStatus } from "#/lib/db/schema/types.ts";
 
@@ -112,41 +113,28 @@ export const $getStudyPlanProgress = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }): Promise<StudyPlanProgress> => {
     const userId = context.user.id;
-    const allTopicSlugs = [...new Set(WEEK_PLAN.flatMap((w) => w.topicSlugs))];
 
-    const topicRows = await db.query.topic.findMany({
-      where: { slug: { in: allTopicSlugs } },
-      orderBy: { sortOrder: "asc" },
-      columns: { slug: true },
-      with: {
-        subtopics: {
-          where: { isMixedPool: false },
-          orderBy: { sortOrder: "asc" },
-          columns: { slug: true, name: true },
-          with: {
-            questions: {
-              orderBy: { sortOrder: "asc" },
-              columns: { id: true, slug: true, title: true, leetcodeNumber: true },
-              with: { progress: { where: { userId }, columns: { status: true } } },
-            },
-          },
-        },
-      },
+    const progressRows = await db.query.questionProgress.findMany({
+      where: { userId },
+      columns: { questionId: true, status: true },
     });
-
-    const topicsBySlug = new Map(topicRows.map((topic) => [topic.slug, topic]));
+    const statusByQuestionId = new Map(progressRows.map((row) => [row.questionId, row.status]));
 
     const progressBySlug = new Map<string, { solved: number; total: number }>();
-    for (const topic of topicRows) {
+    for (const topicSlug of new Set(WEEK_PLAN.flatMap((week) => week.topicSlugs))) {
+      const topic = TOPIC_BY_SLUG.get(topicSlug);
+      if (!topic) continue;
+
       let solved = 0;
       let total = 0;
       for (const subtopic of topic.subtopics) {
-        for (const question of subtopic.questions) {
+        if (subtopic.isMixedPool) continue;
+        for (const question of subtopic.allQuestions) {
           total += 1;
-          if (question.progress[0]?.status === "solved") solved += 1;
+          if (statusByQuestionId.get(question.id) === "solved") solved += 1;
         }
       }
-      progressBySlug.set(topic.slug, { solved, total });
+      progressBySlug.set(topicSlug, { solved, total });
     }
 
     const weeksComputed = WEEK_PLAN.map((week) => {
@@ -193,14 +181,16 @@ export const $getStudyPlanProgress = createServerFn({ method: "GET" })
     const currentWeekDays: StudyDay[] = [];
     let dayNumber = 0;
     for (const topicSlug of currentWeekPlan?.topicSlugs ?? []) {
-      const topic = topicsBySlug.get(topicSlug);
+      const topic = TOPIC_BY_SLUG.get(topicSlug);
       if (!topic) continue;
 
       for (const subtopic of topic.subtopics) {
+        if (subtopic.isMixedPool) continue;
+
         dayNumber += 1;
         let solved = 0;
-        const questions: StudyDayQuestion[] = subtopic.questions.map((question) => {
-          const status = question.progress[0]?.status ?? "todo";
+        const questions: StudyDayQuestion[] = subtopic.allQuestions.map((question) => {
+          const status = statusByQuestionId.get(question.id) ?? "todo";
           if (status === "solved") solved += 1;
           return {
             id: question.id,

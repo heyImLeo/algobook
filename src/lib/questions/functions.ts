@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { authMiddleware, freshAuthMiddleware } from "#/lib/auth/middleware.ts";
+import { QUESTION_BY_ID } from "#/lib/curriculum/content.ts";
 import { db } from "#/lib/db/index.ts";
 import { questionProgress } from "#/lib/db/schema/dsa.schema.ts";
 import type { Difficulty, QuestionStatus } from "#/lib/db/schema/types.ts";
@@ -38,24 +39,14 @@ export const $getQuestionDetail = createServerFn({ method: "GET" })
   .validator(getQuestionDetailInput)
   .handler(async ({ context, data }): Promise<QuestionDetail | null> => {
     const userId = context.user.id;
+    const questionId = `${data.topicSlug}/${data.subtopicSlug}/${data.questionSlug}`;
 
-    const question = await db.query.question.findFirst({
-      where: {
-        slug: data.questionSlug,
-        subtopic: { slug: data.subtopicSlug, topic: { slug: data.topicSlug } },
-      },
-      with: {
-        subtopic: {
-          columns: { slug: true, name: true },
-          with: { topic: { columns: { slug: true, name: true } } },
-        },
-        group: { columns: { name: true } },
-        progress: { where: { userId } },
-      },
+    const question = QUESTION_BY_ID.get(questionId);
+    if (!question) return null;
+
+    const progress = await db.query.questionProgress.findFirst({
+      where: { userId, questionId },
     });
-    if (!question?.subtopic?.topic) return null;
-
-    const progress = question.progress[0];
 
     return {
       id: question.id,
@@ -64,9 +55,9 @@ export const $getQuestionDetail = createServerFn({ method: "GET" })
       leetcodeNumber: question.leetcodeNumber,
       url: question.url,
       difficulty: question.difficulty,
-      groupName: question.group?.name ?? null,
-      topic: question.subtopic.topic,
-      subtopic: { slug: question.subtopic.slug, name: question.subtopic.name },
+      groupName: question.groupName,
+      topic: { slug: question.topicSlug, name: question.topicName },
+      subtopic: { slug: question.subtopicSlug, name: question.subtopicName },
       status: progress?.status ?? "todo",
       solvedWithoutHint: progress?.solvedWithoutHint ?? false,
       understoodFully: progress?.understoodFully ?? false,
@@ -96,6 +87,10 @@ export const $updateQuestionProgress = createServerFn({ method: "POST" })
   .middleware([freshAuthMiddleware])
   .validator(updateQuestionProgressInput)
   .handler(async ({ context, data }) => {
+    if (!QUESTION_BY_ID.has(data.questionId)) {
+      throw new Error(`Unknown question id "${data.questionId}"`);
+    }
+
     const userId = context.user.id;
     const now = new Date();
 

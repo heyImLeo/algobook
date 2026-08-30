@@ -1,0 +1,1 @@
+ALTER TABLE "question_progress" DROP CONSTRAINT "question_progress_question_id_question_id_fkey";

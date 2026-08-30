@@ -5,6 +5,7 @@ import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
+import { SecretEasterEgg } from "#/components/secret-easter-egg.tsx";
 import { ThemeProvider } from "#/components/theme-provider.tsx";
 import { Toaster } from "#/components/ui/toast.tsx";
 
@@ -53,6 +54,7 @@ function RootDocument({ children }: { readonly children: React.ReactNode }) {
         <ThemeProvider defaultTheme="dark">
           {children}
           <Toaster />
+          <SecretEasterEgg />
         </ThemeProvider>
 
         <TanStackDevtools
