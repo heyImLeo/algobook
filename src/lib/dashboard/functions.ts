@@ -69,6 +69,7 @@ export const $getDashboardStats = createServerFn({ method: "GET" })
       orderBy: { sortOrder: "asc" },
       with: {
         subtopics: {
+          where: { isMixedPool: false },
           with: {
             questions: {
               with: {

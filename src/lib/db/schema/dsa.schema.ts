@@ -53,6 +53,9 @@ export const subtopic = pgTable(
     // Long-form reference content (core idea, when-to-use, variants, code,
     // common mistakes, ...), authored as markdown and rendered client-side.
     referenceContent: text("reference_content"),
+    // Marks the one hidden per-topic subtopic that holds Mixed Practice's
+    // question pool — excluded from the topic's visible subtopic list.
+    isMixedPool: boolean("is_mixed_pool").notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")

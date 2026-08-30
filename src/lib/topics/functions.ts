@@ -23,6 +23,7 @@ export const $getSidebarTopics = createServerFn({ method: "GET" })
       orderBy: { sortOrder: "asc" },
       with: {
         subtopics: {
+          where: { isMixedPool: false },
           with: {
             questions: {
               columns: { id: true },
@@ -71,11 +72,8 @@ export interface TopicDetail {
   solved: number;
   total: number;
   subtopics: TopicSubtopicSummary[];
-  mixedRecall: {
-    inRotation: number;
-    confirmedSolid: number;
-    dueForReview: number;
-    lastPracticedAt: string | null;
+  mixedPractice: {
+    todoCount: number;
   };
 }
 
@@ -96,10 +94,7 @@ export const $getTopicDetail = createServerFn({ method: "GET" })
             questions: {
               columns: { id: true },
               with: {
-                progress: {
-                  where: { userId },
-                  columns: { status: true, resolvableIn2Weeks: true, lastPracticedAt: true },
-                },
+                progress: { where: { userId }, columns: { status: true } },
               },
             },
           },
@@ -111,31 +106,27 @@ export const $getTopicDetail = createServerFn({ method: "GET" })
 
     let topicSolved = 0;
     let topicTotal = 0;
-    let confirmedSolid = 0;
-    let dueForReview = 0;
-    const practicedDates: Date[] = [];
+    let mixedPracticeTodo = 0;
 
-    const subtopics: TopicSubtopicSummary[] = topic.subtopics.map((subtopic) => {
+    const subtopics: TopicSubtopicSummary[] = [];
+
+    for (const subtopic of topic.subtopics) {
       let solved = 0;
       const total = subtopic.questions.length;
 
       for (const question of subtopic.questions) {
-        const progress = question.progress[0];
-        if (progress?.status === "solved") {
-          solved += 1;
-          if (progress.resolvableIn2Weeks) confirmedSolid += 1;
-          else dueForReview += 1;
-        } else if (progress?.status === "attempted") {
-          dueForReview += 1;
-        }
+        if (question.progress[0]?.status === "solved") solved += 1;
+      }
 
-        if (progress?.lastPracticedAt) practicedDates.push(progress.lastPracticedAt);
+      if (subtopic.isMixedPool) {
+        mixedPracticeTodo += total - solved;
+        continue;
       }
 
       topicSolved += solved;
       topicTotal += total;
 
-      return {
+      subtopics.push({
         id: subtopic.id,
         slug: subtopic.slug,
         name: subtopic.name,
@@ -145,13 +136,8 @@ export const $getTopicDetail = createServerFn({ method: "GET" })
         bestFor: subtopic.bestFor,
         solved,
         total,
-      };
-    });
-
-    const lastPracticedAt =
-      practicedDates.length > 0
-        ? new Date(Math.max(...practicedDates.map((date) => date.getTime())))
-        : null;
+      });
+    }
 
     return {
       id: topic.id,
@@ -164,13 +150,85 @@ export const $getTopicDetail = createServerFn({ method: "GET" })
       solved: topicSolved,
       total: topicTotal,
       subtopics,
-      mixedRecall: {
-        inRotation: confirmedSolid + dueForReview,
-        confirmedSolid,
-        dueForReview,
-        lastPracticedAt: lastPracticedAt ? lastPracticedAt.toISOString() : null,
-      },
+      mixedPractice: { todoCount: mixedPracticeTodo },
     };
+  });
+
+export interface MixedPracticeQuestion {
+  id: string;
+  slug: string;
+  title: string;
+  leetcodeNumber: number | null;
+  url: string | null;
+  difficulty: Difficulty;
+  subtopicSlug: string;
+  status: QuestionStatus;
+}
+
+export interface MixedPracticeQueue {
+  topic: { slug: string; name: string };
+  questions: MixedPracticeQuestion[];
+}
+
+const DIFFICULTY_ORDER: Record<Difficulty, number> = { easy: 0, medium: 1, hard: 2 };
+
+/**
+ * A standalone pool of questions for the topic that don't appear in any of
+ * its subtopics — e.g. Graphs' mixed practice is its own set of graph
+ * problems, disjoint from anything already seen under BFS, DFS, Dijkstra,
+ * etc. Only not-yet-solved questions from that pool are returned, sorted
+ * easiest to hardest.
+ */
+export const $getMixedPracticeQueue = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .validator(getTopicDetailInput)
+  .handler(async ({ context, data }): Promise<MixedPracticeQueue | null> => {
+    const userId = context.user.id;
+
+    const topic = await db.query.topic.findFirst({
+      where: { slug: data.topicSlug },
+      columns: { slug: true, name: true },
+      with: {
+        subtopics: {
+          where: { isMixedPool: true },
+          columns: { slug: true },
+          with: {
+            questions: {
+              orderBy: { sortOrder: "asc" },
+              with: {
+                progress: { where: { userId }, columns: { status: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!topic) return null;
+
+    const poolSubtopic = topic.subtopics[0];
+
+    const questions: MixedPracticeQuestion[] = [];
+    if (poolSubtopic) {
+      for (const question of poolSubtopic.questions) {
+        const status = question.progress[0]?.status ?? "todo";
+        if (status === "solved") continue;
+
+        questions.push({
+          id: question.id,
+          slug: question.slug,
+          title: question.title,
+          leetcodeNumber: question.leetcodeNumber,
+          url: question.url,
+          difficulty: question.difficulty,
+          subtopicSlug: poolSubtopic.slug,
+          status,
+        });
+      }
+    }
+
+    questions.sort((a, b) => DIFFICULTY_ORDER[a.difficulty] - DIFFICULTY_ORDER[b.difficulty]);
+
+    return { topic: { slug: topic.slug, name: topic.name }, questions };
   });
 
 export interface SubtopicQuestion {
@@ -237,7 +295,7 @@ export const $getSubtopicDetail = createServerFn({ method: "GET" })
       columns: { slug: true, name: true, icon: true },
       with: {
         subtopics: {
-          where: { slug: { ne: data.subtopicSlug } },
+          where: { slug: { ne: data.subtopicSlug }, isMixedPool: false },
           orderBy: { sortOrder: "asc" },
           limit: 2,
           columns: { slug: true, name: true, description: true },

@@ -120,6 +120,7 @@ export const $getStudyPlanProgress = createServerFn({ method: "GET" })
       columns: { slug: true },
       with: {
         subtopics: {
+          where: { isMixedPool: false },
           orderBy: { sortOrder: "asc" },
           columns: { slug: true, name: true },
           with: {

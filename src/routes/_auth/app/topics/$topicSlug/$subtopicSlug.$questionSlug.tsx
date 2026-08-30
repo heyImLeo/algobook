@@ -3,6 +3,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ChevronRightIcon, ExternalLinkIcon, PencilIcon } from "lucide-react";
 import { useState } from "react";
 
+import { CodeBlock } from "#/components/code-block.tsx";
 import { QuestionStatusIcon } from "#/components/question-status-icon.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import { toast } from "#/components/ui/toast.tsx";
@@ -383,9 +384,7 @@ function NotesSection({
           <h2 className="mb-3 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             Solution
           </h2>
-          <pre className="mb-6 overflow-x-auto rounded-2xl border border-border bg-muted p-4 font-mono text-xs leading-relaxed">
-            {question.solutionCode}
-          </pre>
+          <CodeBlock code={question.solutionCode} className="mb-6" />
         </>
       )}
 

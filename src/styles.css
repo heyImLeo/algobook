@@ -162,3 +162,27 @@
     @apply font-heading tracking-tight;
   }
 }
+
+@layer components {
+  .prism-code .token.comment {
+    @apply text-muted-foreground italic;
+  }
+  .prism-code .token.keyword,
+  .prism-code .token.operator,
+  .prism-code .token.boolean {
+    @apply text-primary;
+  }
+  .prism-code .token.string {
+    @apply text-success;
+  }
+  .prism-code .token.number {
+    @apply text-gold;
+  }
+  .prism-code .token.function,
+  .prism-code .token.class-name {
+    @apply text-warning;
+  }
+  .prism-code .token.punctuation {
+    @apply text-muted-foreground;
+  }
+}
