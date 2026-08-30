@@ -72,7 +72,7 @@ function AppLayout() {
 const RESOURCE_LINKS = [
   { icon: SparklesIcon, label: "Pattern Cheatsheet", to: "/app/pattern-cheatsheet" as const },
   { icon: ZapIcon, label: "Complexity Reference", to: undefined },
-  { icon: CalendarIcon, label: "Study Plan", to: undefined },
+  { icon: CalendarIcon, label: "Study Plan", to: "/app/study-plan" as const },
   { icon: TargetIcon, label: "Interview Tips", to: undefined },
   { icon: Code2Icon, label: "Python Reference", to: undefined },
 ];
