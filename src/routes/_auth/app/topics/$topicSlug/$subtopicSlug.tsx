@@ -1,11 +1,13 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ChevronRightIcon, ExternalLinkIcon } from "lucide-react";
 import { useState } from "react";
 import Markdown from "react-markdown";
 
 import { QuestionStatusIcon } from "#/components/question-status-icon.tsx";
+import { toast } from "#/components/ui/toast.tsx";
 import type { Difficulty, QuestionStatus } from "#/lib/db/schema/types.ts";
+import { $updateQuestionProgress } from "#/lib/questions/functions.ts";
 import { getTopicIcon } from "#/lib/topic-icons.ts";
 import type {
   RelatedSubtopic,
@@ -15,6 +17,12 @@ import type {
 } from "#/lib/topics/functions.ts";
 import { subtopicDetailQueryOptions } from "#/lib/topics/queries.ts";
 import { cn } from "#/lib/utils.ts";
+
+const NEXT_STATUS: Record<QuestionStatus, QuestionStatus> = {
+  todo: "attempted",
+  attempted: "solved",
+  solved: "todo",
+};
 
 export const Route = createFileRoute("/_auth/app/topics/$topicSlug/$subtopicSlug")({
   component: SubtopicPage,
@@ -310,9 +318,28 @@ function QuestionRow({
   readonly subtopicSlug: string;
   readonly question: SubtopicQuestion;
 }) {
+  const queryClient = useQueryClient();
+  const queryKey = subtopicDetailQueryOptions(topicSlug, subtopicSlug).queryKey;
+
+  const mutation = useMutation({
+    mutationFn: (status: QuestionStatus) =>
+      $updateQuestionProgress({ data: { questionId: question.id, status } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onError: () => toast.add({ type: "error", description: "Couldn't update the status." }),
+  });
+
   return (
     <div className="flex items-center gap-3 border-b border-border py-3 last:border-b-0">
-      <QuestionStatusIcon status={question.status} className="shrink-0" />
+      <button
+        type="button"
+        disabled={mutation.isPending}
+        onClick={() => mutation.mutate(NEXT_STATUS[question.status])}
+        aria-label={`Mark ${question.title} as ${NEXT_STATUS[question.status]}`}
+        title={`Mark as ${NEXT_STATUS[question.status]}`}
+        className="shrink-0 rounded-full transition-opacity hover:opacity-70 disabled:opacity-50"
+      >
+        <QuestionStatusIcon status={question.status} className="shrink-0" />
+      </button>
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <Link
           to="/app/topics/$topicSlug/$subtopicSlug/$questionSlug"
