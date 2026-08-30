@@ -3,8 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRightIcon, TriangleAlertIcon } from "lucide-react";
 
 import { QuestionStatusIcon } from "#/components/question-status-icon.tsx";
-import type { QuestionStatus } from "#/lib/db/schema/types.ts";
-import type { StudyWeekProgress, StudyWeekStatus } from "#/lib/study-plan/functions.ts";
+import type { StudyDay, StudyWeekProgress, StudyWeekStatus } from "#/lib/study-plan/functions.ts";
 import { studyPlanProgressQueryOptions } from "#/lib/study-plan/queries.ts";
 import { cn } from "#/lib/utils.ts";
 
@@ -125,57 +124,6 @@ const CORE_PATTERN_CHECKLIST: ChecklistGroup[] = [
   {
     category: "Bit Manipulation",
     rows: [{ num: 26, name: "Bit Manipulation", problems: "136 · 137 · 191 · 338 · 268 · 190" }],
-  },
-];
-
-interface DayQuestion {
-  title: string;
-  leetcodeNumber: number;
-  status: QuestionStatus;
-}
-
-interface DayGroup {
-  label: string;
-  questions: DayQuestion[];
-}
-
-const WEEK_5_DAY_BY_DAY: DayGroup[] = [
-  {
-    label: "Day 1–2 — BFS & DFS Fundamentals",
-    questions: [
-      { title: "Number of Islands", leetcodeNumber: 200, status: "solved" },
-      { title: "Clone Graph", leetcodeNumber: 133, status: "todo" },
-      { title: "Rotting Oranges", leetcodeNumber: 994, status: "solved" },
-      { title: "Flood Fill", leetcodeNumber: 733, status: "solved" },
-      { title: "Pacific Atlantic Water Flow", leetcodeNumber: 417, status: "attempted" },
-    ],
-  },
-  {
-    label: "Day 3 — Topological Sort",
-    questions: [
-      { title: "Course Schedule", leetcodeNumber: 207, status: "todo" },
-      { title: "Course Schedule II", leetcodeNumber: 210, status: "todo" },
-      { title: "Alien Dictionary", leetcodeNumber: 269, status: "todo" },
-      { title: "All Ancestors of a Node in a DAG", leetcodeNumber: 2192, status: "todo" },
-    ],
-  },
-  {
-    label: "Day 4 — Union-Find",
-    questions: [
-      { title: "Number of Connected Components", leetcodeNumber: 323, status: "todo" },
-      { title: "Redundant Connection", leetcodeNumber: 684, status: "todo" },
-      { title: "Accounts Merge", leetcodeNumber: 721, status: "todo" },
-      { title: "Graph Valid Tree", leetcodeNumber: 261, status: "todo" },
-    ],
-  },
-  {
-    label: "Day 5–6 — Dijkstra & Advanced",
-    questions: [
-      { title: "Network Delay Time", leetcodeNumber: 743, status: "solved" },
-      { title: "Cheapest Flights Within K Stops", leetcodeNumber: 787, status: "attempted" },
-      { title: "Path with Minimum Effort", leetcodeNumber: 1631, status: "todo" },
-      { title: "Word Ladder", leetcodeNumber: 127, status: "attempted" },
-    ],
   },
 ];
 
@@ -323,32 +271,23 @@ function StudyPlanPage() {
         ))}
       </div>
 
-      <h2 className="mb-4 text-xs font-bold tracking-wide text-muted-foreground uppercase">
-        Week 5 — Graphs, Day by Day
-      </h2>
-      <div className="mb-8 rounded-2xl border border-border bg-card px-5">
-        {WEEK_5_DAY_BY_DAY.map((day) => (
-          <div key={day.label}>
-            <div className="pt-4 pb-1.5 text-xs font-bold text-muted-foreground">{day.label}</div>
-            {day.questions.map((question) => (
-              <div
-                key={question.leetcodeNumber}
-                className="flex items-center gap-2.5 border-b border-border py-2.5 last:border-b-0"
-              >
-                <QuestionStatusIcon status={question.status} className="shrink-0" />
-                <span
-                  className={cn("text-sm", question.status === "todo" && "text-muted-foreground")}
-                >
-                  {question.title}
-                </span>
-                <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
-                  #{question.leetcodeNumber}
-                </span>
-              </div>
-            ))}
+      {currentWeek && (
+        <>
+          <h2 className="mb-4 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+            Week {currentWeek.week} — {currentWeek.focus}, Day by Day
+          </h2>
+          <div className="mb-8 rounded-2xl border border-border bg-card px-5">
+            {progress?.currentWeekDays.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Review week — revisit anything still due for review across every topic instead of a
+                fixed daily list.
+              </p>
+            ) : (
+              progress?.currentWeekDays.map((day) => <StudyDayCard key={day.day} day={day} />)
+            )}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
       <h2 className="mb-4 text-xs font-bold tracking-wide text-muted-foreground uppercase">
         Daily Practice Template
@@ -430,5 +369,42 @@ function WeekRow({ week }: { readonly week: StudyWeekProgress }) {
         </span>
       </td>
     </tr>
+  );
+}
+
+function StudyDayCard({ day }: { readonly day: StudyDay }) {
+  return (
+    <div>
+      <div className="flex items-baseline gap-2 pt-4 pb-1.5">
+        <span className="text-xs font-bold text-muted-foreground">
+          Day {day.day} — {day.subtopicName}
+        </span>
+        <span className="font-mono text-[11px] text-muted-foreground/70">
+          {day.solved}/{day.total}
+        </span>
+      </div>
+      {day.questions.map((question) => (
+        <Link
+          key={question.id}
+          to="/app/topics/$topicSlug/$subtopicSlug/$questionSlug"
+          params={{
+            topicSlug: day.topicSlug,
+            subtopicSlug: day.subtopicSlug,
+            questionSlug: question.slug,
+          }}
+          className="flex items-center gap-2.5 border-b border-border py-2.5 last:border-b-0 hover:bg-accent/40"
+        >
+          <QuestionStatusIcon status={question.status} className="shrink-0" />
+          <span className={cn("text-sm", question.status === "todo" && "text-muted-foreground")}>
+            {question.title}
+          </span>
+          {question.leetcodeNumber !== null && (
+            <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
+              #{question.leetcodeNumber}
+            </span>
+          )}
+        </Link>
+      ))}
+    </div>
   );
 }

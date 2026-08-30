@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { authMiddleware } from "#/lib/auth/middleware.ts";
 import { db } from "#/lib/db/index.ts";
+import type { QuestionStatus } from "#/lib/db/schema/types.ts";
 
 interface WeekPlan {
   week: number;
@@ -82,10 +83,29 @@ export interface StudyWeekProgress {
   total: number;
 }
 
+export interface StudyDayQuestion {
+  id: string;
+  slug: string;
+  title: string;
+  leetcodeNumber: number | null;
+  status: QuestionStatus;
+}
+
+export interface StudyDay {
+  day: number;
+  subtopicName: string;
+  topicSlug: string;
+  subtopicSlug: string;
+  solved: number;
+  total: number;
+  questions: StudyDayQuestion[];
+}
+
 export interface StudyPlanProgress {
   weeks: StudyWeekProgress[];
   currentWeek: number;
   completedWeeks: number;
+  currentWeekDays: StudyDay[];
 }
 
 export const $getStudyPlanProgress = createServerFn({ method: "GET" })
@@ -96,18 +116,24 @@ export const $getStudyPlanProgress = createServerFn({ method: "GET" })
 
     const topicRows = await db.query.topic.findMany({
       where: { slug: { in: allTopicSlugs } },
+      orderBy: { sortOrder: "asc" },
       columns: { slug: true },
       with: {
         subtopics: {
+          orderBy: { sortOrder: "asc" },
+          columns: { slug: true, name: true },
           with: {
             questions: {
-              columns: { id: true },
+              orderBy: { sortOrder: "asc" },
+              columns: { id: true, slug: true, title: true, leetcodeNumber: true },
               with: { progress: { where: { userId }, columns: { status: true } } },
             },
           },
         },
       },
     });
+
+    const topicsBySlug = new Map(topicRows.map((topic) => [topic.slug, topic]));
 
     const progressBySlug = new Map<string, { solved: number; total: number }>();
     for (const topic of topicRows) {
@@ -159,9 +185,47 @@ export const $getStudyPlanProgress = createServerFn({ method: "GET" })
       };
     });
 
+    // The current week's day-by-day breakdown is generated straight from the
+    // real curriculum: each subtopic in the week's topic(s), in order, becomes
+    // one "day," listing that subtopic's actual questions and live status.
+    const currentWeekPlan = WEEK_PLAN.find((week) => week.week === currentWeek);
+    const currentWeekDays: StudyDay[] = [];
+    let dayNumber = 0;
+    for (const topicSlug of currentWeekPlan?.topicSlugs ?? []) {
+      const topic = topicsBySlug.get(topicSlug);
+      if (!topic) continue;
+
+      for (const subtopic of topic.subtopics) {
+        dayNumber += 1;
+        let solved = 0;
+        const questions: StudyDayQuestion[] = subtopic.questions.map((question) => {
+          const status = question.progress[0]?.status ?? "todo";
+          if (status === "solved") solved += 1;
+          return {
+            id: question.id,
+            slug: question.slug,
+            title: question.title,
+            leetcodeNumber: question.leetcodeNumber,
+            status,
+          };
+        });
+
+        currentWeekDays.push({
+          day: dayNumber,
+          subtopicName: subtopic.name,
+          topicSlug,
+          subtopicSlug: subtopic.slug,
+          solved,
+          total: questions.length,
+          questions,
+        });
+      }
+    }
+
     return {
       weeks,
       currentWeek,
       completedWeeks: weeks.filter((week) => week.status === "complete").length,
+      currentWeekDays,
     };
   });
